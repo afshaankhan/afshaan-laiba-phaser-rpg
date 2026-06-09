@@ -1,0 +1,826 @@
+const Phaser = window.Phaser;
+
+const GAME_W = 960;
+const GAME_H = 640;
+const START_DATE = new Date("2026-01-09T16:00:00-06:00");
+const SAVE_KEY = "afshaan-laiba-phaser-rpg-save";
+
+const SONGS = [
+  ["https://p.scdn.co/mp3-preview/0d95bb81dbac4d96607c35dc8dae36a85b3e85ed?cid=2feb4729ba5145d7a7fd92f2af83cf0d", "wave to earth - light"],
+  ["https://p.scdn.co/mp3-preview/2b54680ec8cc2e1da05133386a4f38d136e8e699?cid=2feb4729ba5145d7a7fd92f2af83cf0d", "IU - I."],
+  ["https://p.scdn.co/mp3-preview/e05a2e6a7ae824a7d9abbd24ae6e5a82eab82300?cid=2feb4729ba5145d7a7fd92f2af83cf0d", "Strawberries & Cigarettes"],
+  ["https://p.scdn.co/mp3-preview/52accf6e63669cbf49ff2fd90f2c5eabbf19183c?cid=2feb4729ba5145d7a7fd92f2af83cf0d", "wave to earth - seasons"],
+  ["https://p.scdn.co/mp3-preview/fde444400feafc967b6f103db30868df79c8ac3a9?cid=2feb4729ba5145d7a7fd92f2af83cf0d", "Cigarettes After Sex - K."],
+  ["https://p.scdn.co/mp3-preview/91e3e5adef583dc29b2e89dc2a5e9c7d7a12af68?cid=2feb4729ba5145d7a7fd92f2af83cf0d", "Kali Uchis - Sincerely,"],
+  ["https://p.scdn.co/mp3-preview/bd80cc6de9d0f89a92b3bca7d1e0842cce7b58f2?cid=2feb4729ba5145d7a7fd92f2af83cf0d", "beabadoobee - Glue Song"],
+  ["https://p.scdn.co/mp3-preview/68ef9a47c4da4d3b9bf08ab6e2cc36bfa9b27e68?cid=2feb4729ba5145d7a7fd92f2af83cf0d", "TV Girl - Lovers Rock"],
+  ["https://p.scdn.co/mp3-preview/0dcffaf83437720696060e3a836b91eb9f47bba3?cid=2feb4729ba5145d7a7fd92f2af83cf0d", "Mazzy Star - Fade Into You"],
+];
+
+const ORDER = ["hinge", "chat", "distance", "facetime", "movies", "games", "spotify", "sleep", "morning", "ending"];
+
+const SCENES = {
+  hinge: {
+    title: "Jan 9, 2026 - Hinge Match",
+    quest: "Inspect the Hinge phone",
+    palette: ["0x141326", "0x211a3a", "0x31234d"],
+    start: [390, 475],
+    partner: [570, 475],
+    props: [
+      ["calendar", 96, 92, "JAN 9"],
+      ["phone", 430, 214, "Hinge phone"],
+      ["pigeon", 260, 270, "photo"],
+      ["desk", 356, 400, "random Friday"],
+      ["memory", 765, 135, "first spark"],
+    ],
+    zones: [{ type: "phone", x: 430, y: 214, w: 120, h: 184, label: "Hinge phone" }],
+  },
+  chat: {
+    title: "First Messages",
+    quest: "Read the first message memory",
+    palette: ["0x111225", "0x1b1933", "0x2f2446"],
+    start: [150, 475],
+    partner: [810, 475],
+    props: [
+      ["chat", 240, 145, "Is that inside a microwave??"],
+      ["music", 610, 154, "Mystery of Love"],
+      ["memory", 458, 355, "message memory"],
+      ["pigeon", 112, 160, "the pet photo"],
+    ],
+    zones: [{ type: "chat_scene", x: 360, y: 300, w: 240, h: 130, label: "Message memory" }],
+  },
+  distance: {
+    title: "Frisco <-> Ellicott City",
+    quest: "Visit both homes, then open FaceTime",
+    palette: ["0x10182c", "0x14213a", "0x263655"],
+    start: [110, 500],
+    partner: [850, 500],
+    props: [
+      ["houseBlue", 90, 150, "Frisco, Texas"],
+      ["housePink", 720, 150, "Ellicott City"],
+      ["planePath", 280, 265, "1,300 miles"],
+      ["laptop", 402, 365, "FaceTime bridge"],
+    ],
+    zones: [
+      { type: "frisco", x: 88, y: 148, w: 165, h: 160, label: "Frisco TX" },
+      { type: "baltimore", x: 716, y: 148, w: 165, h: 160, label: "Ellicott City" },
+      { type: "facetime_btn", x: 405, y: 368, w: 150, h: 100, label: "Open FaceTime" },
+    ],
+  },
+  facetime: {
+    title: "FaceTime Every Day",
+    quest: "Step into movie night",
+    palette: ["0x0d0d1a", "0x151d34", "0x342038"],
+    start: [168, 485],
+    partner: [790, 485],
+    props: [
+      ["screenBlue", 60, 95, "Afshaan's screen"],
+      ["screenPink", 585, 95, "Laiba's screen"],
+      ["laptop", 405, 170, "Google Meet"],
+      ["hearts", 150, 200, "daily call"],
+    ],
+    zones: [{ type: "facetime_next", x: 386, y: 500, w: 188, h: 90, label: "Movie Night" }],
+  },
+  movies: {
+    title: "Google Meet Movie Night",
+    quest: "Open the game-night portal",
+    palette: ["0x181830", "0x211f3b", "0x30294a"],
+    start: [250, 480],
+    partner: [710, 480],
+    props: [
+      ["theater", 155, 84, "synced movie"],
+      ["popcorn", 140, 450, "popcorn"],
+      ["popcorn", 765, 450, "popcorn"],
+      ["memory", 448, 350, "same movie"],
+    ],
+    zones: [{ type: "next", x: 388, y: 500, w: 184, h: 90, label: "Game Night" }],
+  },
+  games: {
+    title: "Skribbl + Name Place Animal Thing",
+    quest: "Start the Spotify portal",
+    palette: ["0x241a34", "0x35264f", "0x493166"],
+    start: [238, 474],
+    partner: [720, 474],
+    props: [
+      ["skribbl", 220, 118, "Skribbl board"],
+      ["cards", 125, 395, "Name Place Animal Thing"],
+      ["memory", 735, 398, "Laiba wins"],
+    ],
+    zones: [{ type: "next2", x: 388, y: 500, w: 184, h: 90, label: "Spotify Jam" }],
+  },
+  spotify: {
+    title: "Spotify Jam",
+    quest: "Start the sleep-call portal",
+    palette: ["0x081910", "0x102218", "0x173a25"],
+    start: [250, 480],
+    partner: [710, 480],
+    props: [
+      ["equalizer", 70, 250, "playlist"],
+      ["album", 350, 118, "Now playing"],
+      ["music", 640, 150, "songs together"],
+    ],
+    zones: [{ type: "next3", x: 388, y: 500, w: 184, h: 90, label: "Sleep Call" }],
+  },
+  sleep: {
+    title: "Sleep on Call",
+    quest: "Wake up into the morning scene",
+    palette: ["0x080a18", "0x12142b", "0x1e203d"],
+    start: [285, 485],
+    partner: [675, 485],
+    props: [
+      ["bedBlue", 145, 250, "Afshaan"],
+      ["bedPink", 565, 250, "Laiba"],
+      ["phoneSmall", 455, 330, "call still on"],
+      ["zzz", 208, 168, "quiet"],
+    ],
+    zones: [{ type: "next4", x: 388, y: 500, w: 184, h: 90, label: "Morning" }],
+  },
+  morning: {
+    title: "Good Morning",
+    quest: "Open the anniversary sunrise",
+    palette: ["0xffecd2", "0xfcb69f", "0xff8cb3"],
+    start: [280, 490],
+    partner: [680, 490],
+    props: [
+      ["sunrise", 340, 90, "Good morning, beautiful"],
+      ["chat", 262, 245, "daily ritual"],
+      ["flowers", 118, 420, "morning garden"],
+      ["flowers", 785, 420, "morning garden"],
+    ],
+    zones: [{ type: "next5", x: 388, y: 500, w: 184, h: 90, label: "5 Months" }],
+  },
+  ending: {
+    title: "Five Months Together",
+    quest: "Explore the final memory garden",
+    palette: ["0x17052d", "0x2c1550", "0x071520"],
+    start: [385, 455],
+    partner: [575, 455],
+    props: [
+      ["garden", 70, 512, "memory garden"],
+      ["titleStone", 285, 110, "Afshaan + Laiba"],
+      ["memory", 215, 310, "Hinge"],
+      ["memory", 365, 310, "calls"],
+      ["memory", 515, 310, "movies"],
+      ["memory", 665, 310, "songs"],
+    ],
+    zones: [{ type: "replay", x: 395, y: 520, w: 170, h: 78, label: "Play Again" }],
+  },
+};
+
+const DIALOGUE = {
+  phone: [
+    "You replied to her pigeon photo on Hinge.",
+    "Afshaan: Is that inside a microwave??",
+    "Laiba: it's his cage 😭",
+    "Then she sent Mystery of Love.",
+    "Random Friday, Jan 9, 2026 became Chapter One.",
+  ],
+  chat_scene: [
+    "The first messages felt weirdly easy.",
+    "A pigeon, a joke, a song, and Call Me By Your Name.",
+    "Somehow one tiny reply became every-day talking.",
+    "New objective unlocked: survive 1,300 miles.",
+  ],
+  frisco: [
+    "Frisco, Texas - Afshaan's side of the map.",
+    "Laptop open. Phone charged. Waiting for her call.",
+    "Distance: huge. Feelings: larger.",
+  ],
+  baltimore: [
+    "Ellicott City / Baltimore - Laiba's side of the map.",
+    "Her screen lights up and the whole map feels warmer.",
+    "She is far, but never feels absent.",
+  ],
+  facetime_btn: [
+    "FaceTime every day.",
+    "Two homes. One call. Same little world.",
+    "Movies, games, songs, sleep calls - all through a screen.",
+    "Entering FaceTime realm...",
+  ],
+  facetime_next: [
+    "FaceTime Daily Quest complete.",
+    "Next memory: Google Meet movie nights.",
+    "She watches the movie. He watches her reactions.",
+  ],
+  next: ["Movie night complete.", "Popcorn on two sides of the country.", "Next memory: chaotic game nights."],
+  next2: ["Skribbl. Name Place Animal Thing.", "Laiba plays. Afshaan watches. Laiba wins.", "Afshaan still cheers like it is the finals."],
+  next3: ["Spotify Jam unlocked.", "Every song becomes a little checkpoint.", "Mystery of Love keeps following them."],
+  next4: ["Sleep on call.", "Phones propped up. Quiet breathing. Safe feeling.", "Distance loses another round."],
+  next5: ["Good morning, beautiful.", "A daily ritual. A tiny spell.", "Five months later, still the best notification."],
+};
+
+class BootScene extends Phaser.Scene {
+  constructor() {
+    super("Boot");
+  }
+
+  create() {
+    this.makeSprites();
+    this.scene.start("Game");
+  }
+
+  makeSprites() {
+    this.makeCharacter("afshaan", 0x5bb5f0, 0xd4a574, 0x19172a);
+    this.makeCharacter("laiba", 0xe8526b, 0xffe4d0, 0x8b5e3c);
+    this.makeIcon("heart", 0xff8cb3);
+    this.makeIcon("spark", 0xffd166);
+  }
+
+  makeCharacter(key, outfit, skin, hair) {
+    const g = this.add.graphics();
+    g.fillStyle(0x000000, 0.23).fillRect(5, 54, 28, 8);
+    g.fillStyle(outfit).fillRect(9, 24, 22, 30);
+    g.lineStyle(1, 0x000000, 0.28).strokeRect(9, 24, 22, 30);
+    g.fillStyle(skin).fillRect(12, 8, 16, 16);
+    g.fillStyle(hair);
+    if (key === "afshaan") {
+      g.fillRect(10, 3, 20, 8).fillRect(10, 9, 4, 10).fillRect(26, 9, 4, 10);
+    } else {
+      g.fillRect(10, 2, 20, 8).fillRect(9, 8, 5, 20).fillRect(26, 8, 5, 20).fillStyle(0xa97954).fillRect(14, 0, 12, 4);
+    }
+    g.fillStyle(0xffffff).fillRect(15, 14, 3, 3).fillRect(22, 14, 3, 3);
+    g.fillStyle(0x111111).fillRect(16, 15, 2, 2).fillRect(23, 15, 2, 2);
+    g.fillStyle(0xc9767a).fillRect(18, 20, 4, 2);
+    g.fillStyle(0xff8ca0, 0.55).fillRect(13, 18, 3, 2).fillRect(24, 18, 3, 2);
+    g.fillStyle(0x353548).fillRect(11, 54, 7, 12).fillRect(22, 54, 7, 12);
+    g.fillStyle(0x222232).fillRect(10, 64, 8, 4).fillRect(23, 64, 8, 4);
+    g.generateTexture(key, 40, 72);
+    g.destroy();
+  }
+
+  makeIcon(key, color) {
+    const g = this.add.graphics();
+    g.fillStyle(color).fillRect(6, 2, 8, 8).fillRect(18, 2, 8, 8).fillRect(2, 10, 28, 8).fillRect(7, 18, 18, 8).fillRect(12, 26, 8, 4);
+    g.generateTexture(key, 32, 32);
+    g.destroy();
+  }
+}
+
+class GameScene extends Phaser.Scene {
+  constructor() {
+    super("Game");
+    this.mode = "title";
+    this.sceneKey = "hinge";
+    this.playerChoice = "";
+    this.dialogue = [];
+    this.dialogueIndex = 0;
+    this.dialogueNext = null;
+    this.musicOn = true;
+    this.songIndex = Math.floor(Math.random() * SONGS.length);
+    this.audio = null;
+    this.virtual = { up: false, down: false, left: false, right: false };
+  }
+
+  create() {
+    this.cursors = this.input.keyboard.createCursorKeys();
+    this.keys = this.input.keyboard.addKeys("W,A,S,D,E,M,ENTER,SPACE");
+    this.input.keyboard.on("keydown", (event) => this.handleKey(event));
+    this.ui = this.add.container(0, 0).setDepth(100);
+    this.map = this.add.container(0, 0);
+    this.mobileControls();
+    const saved = this.loadSave();
+    if (saved?.playerChoice && saved?.sceneKey) {
+      this.mode = "title";
+      this.saved = saved;
+    }
+    this.drawTitle();
+    this.input.on("pointerdown", (pointer) => this.handlePointer(pointer));
+  }
+
+  update() {
+    if (this.mode !== "play" || this.dialogue.length) return;
+    const speed = 172;
+    const body = this.player.body;
+    const left = this.cursors.left.isDown || this.keys.A.isDown || this.virtual.left;
+    const right = this.cursors.right.isDown || this.keys.D.isDown || this.virtual.right;
+    const up = this.cursors.up.isDown || this.keys.W.isDown || this.virtual.up;
+    const down = this.cursors.down.isDown || this.keys.S.isDown || this.virtual.down;
+    body.setVelocity(0);
+    if (left) body.setVelocityX(-speed);
+    if (right) body.setVelocityX(speed);
+    if (up) body.setVelocityY(-speed);
+    if (down) body.setVelocityY(speed);
+    body.velocity.normalize().scale(speed);
+    if (left || right || up || down) this.emitHeart();
+    this.followPartner();
+    if (this.sceneKey === "ending" && this.timerText) this.timerText.setText(this.loveTimer());
+  }
+
+  handleKey(event) {
+    const key = event.key;
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(key)) event.preventDefault();
+    if (key === "m" || key === "M") {
+      this.toggleMusic();
+      return;
+    }
+    if (key === "Enter" || key === " " || key === "e" || key === "E") {
+      if (this.mode === "title") {
+        this.drawSelect();
+        return;
+      }
+      if (this.dialogue.length) {
+        this.advanceDialogue();
+        return;
+      }
+      if (this.mode === "play") this.tryInteract();
+    }
+  }
+
+  drawTitle() {
+    this.clearAll();
+    this.mode = "title";
+    this.drawBackdrop(0x090814, 0x1d0d37);
+    this.addText(GAME_W / 2, 150, "Afshaan ♡ Laiba", 46, "#ffd6e8", true);
+    this.addText(GAME_W / 2, 205, "A Complete Browser RPG", 20, "#f0e6d3");
+    this.addText(GAME_W / 2, 240, "5 months together · made for monthly updates", 14, "#ff8cb3");
+    this.add.image(GAME_W / 2 - 90, 375, "afshaan").setScale(2);
+    this.add.image(GAME_W / 2 + 90, 375, "laiba").setScale(2);
+    this.addText(GAME_W / 2, 500, "ENTER / TAP to start", 18, "#ffd166", true);
+    this.addText(GAME_W / 2, 532, this.saved ? "Saved game found · continue available after character select" : "New game · choose who is playing", 11, "#aaa");
+  }
+
+  drawSelect() {
+    this.clearAll();
+    this.mode = "select";
+    this.drawTiledFloor([0x0d0d1f, 0x191633, 0x2b2442]);
+    this.addText(GAME_W / 2, 130, "Choose Your Character", 32, "#f0e6d3", true);
+    this.drawCard(230, 205, "Afshaan", "Frisco, Texas", "afshaan", "#5bb5f0");
+    this.drawCard(530, 205, "Laiba", "Ellicott City, Baltimore", "laiba", "#e8526b");
+    if (this.saved) {
+      const btn = this.drawButton(GAME_W / 2 - 115, 535, 230, 44, "Continue saved game");
+      btn.setData("action", "continue");
+    }
+    this.addText(GAME_W / 2, 595, "Desktop: WASD/Arrows + E · Mobile: D-pad + E", 11, "#aaa");
+  }
+
+  startRun(choice, sceneKey = "hinge") {
+    this.playerChoice = choice;
+    this.sceneKey = sceneKey;
+    this.mode = "play";
+    this.save();
+    this.startMusic();
+    this.loadMap(sceneKey);
+  }
+
+  loadMap(key) {
+    this.clearAll();
+    this.mode = "play";
+    this.sceneKey = key;
+    const data = SCENES[key];
+    this.drawTiledFloor(data.palette);
+    this.drawProps(data.props);
+    this.drawZones(data.zones);
+    this.walls = this.physics.add.staticGroup();
+    this.makeWalls();
+    const pKey = this.playerChoice === "Laiba" ? "laiba" : "afshaan";
+    const partnerKey = this.playerChoice === "Laiba" ? "afshaan" : "laiba";
+    this.player = this.physics.add.sprite(data.start[0], data.start[1], pKey).setScale(1.35).setDepth(20);
+    this.partner = this.physics.add.sprite(data.partner[0], data.partner[1], partnerKey).setScale(1.2).setDepth(19);
+    this.player.body.setSize(24, 28).setOffset(8, 38);
+    this.partner.body.setSize(24, 28).setOffset(8, 38);
+    this.physics.add.collider(this.player, this.walls);
+    this.drawHud();
+    this.save();
+  }
+
+  makeWalls() {
+    const rects = [
+      [0, 0, GAME_W, 50],
+      [0, GAME_H - 34, GAME_W, 34],
+      [0, 0, 14, GAME_H],
+      [GAME_W - 14, 0, 14, GAME_H],
+    ];
+    for (const r of rects) {
+      const wall = this.add.rectangle(r[0] + r[2] / 2, r[1] + r[3] / 2, r[2], r[3], 0x000000, 0);
+      this.physics.add.existing(wall, true);
+      this.walls.add(wall);
+    }
+  }
+
+  tryInteract() {
+    if (this.dialogue.length) {
+      this.advanceDialogue();
+      return;
+    }
+    const zone = this.zones?.find((z) => Phaser.Geom.Rectangle.Overlaps(this.player.getBounds(), z.rect) || Phaser.Math.Distance.Between(this.player.x, this.player.y, z.cx, z.cy) < 116);
+    if (zone) this.trigger(zone.type);
+    else if (this.zones?.length === 1) this.trigger(this.zones[0].type);
+  }
+
+  trigger(type) {
+    if (type === "replay") {
+      localStorage.removeItem(SAVE_KEY);
+      this.saved = null;
+      this.drawTitle();
+      return;
+    }
+    const nextMap = {
+      phone: "chat",
+      chat_scene: "distance",
+      facetime_btn: "facetime",
+      facetime_next: "movies",
+      next: "games",
+      next2: "spotify",
+      next3: "sleep",
+      next4: "morning",
+      next5: "ending",
+    };
+    this.showDialogue(DIALOGUE[type] || ["Memory unlocked."], nextMap[type] ? () => this.loadMap(nextMap[type]) : null);
+  }
+
+  showDialogue(lines, callback) {
+    this.dialogue = lines;
+    this.dialogueIndex = 0;
+    this.dialogueNext = callback;
+    this.drawDialogue();
+  }
+
+  advanceDialogue() {
+    this.dialogueIndex += 1;
+    if (this.dialogueIndex >= this.dialogue.length) {
+      const next = this.dialogueNext;
+      this.dialogue = [];
+      this.dialogueNext = null;
+      this.dialogueBox?.destroy();
+      if (next) next();
+      return;
+    }
+    this.drawDialogue();
+  }
+
+  drawDialogue() {
+    this.dialogueBox?.destroy();
+    this.dialogueBox = this.add.container(0, 0).setDepth(120);
+    this.dialogueBox.add(this.add.rectangle(GAME_W / 2, GAME_H - 110, GAME_W - 82, 142, 0x050510, 0.94).setStrokeStyle(3, 0xc9a2d6));
+    this.dialogueBox.add(this.addText(GAME_W / 2, GAME_H - 134, this.dialogue[this.dialogueIndex], 15, "#ffffff", false, 740));
+    this.dialogueBox.add(this.addText(GAME_W / 2, GAME_H - 64, this.dialogueIndex < this.dialogue.length - 1 ? "ENTER / E to continue" : "ENTER / E to close", 11, "#ffd166"));
+  }
+
+  drawHud() {
+    this.hud?.destroy();
+    const data = SCENES[this.sceneKey];
+    this.hud = this.add.container(0, 0).setDepth(90);
+    this.hud.add(this.add.rectangle(GAME_W / 2, 17, GAME_W, 34, 0x000000, 0.72));
+    this.hud.add(this.addText(18, 22, data.title, 12, "#c9a2d6", true).setOrigin(0, 0.5));
+    this.hud.add(this.addText(GAME_W / 2, 22, `Quest: ${data.quest}`, 10, "#f0e6d3"));
+    this.hud.add(this.addText(GAME_W - 18, 22, `${this.musicOn ? "♫" : "mute"} ${SONGS[this.songIndex][1].slice(0, 24)}`, 10, "#ff8cb3").setOrigin(1, 0.5));
+    const idx = ORDER.indexOf(this.sceneKey);
+    const bar = this.add.rectangle(GAME_W / 2, 48, 300, 10, 0xffffff, 0.12).setStrokeStyle(1, 0xffffff, 0.22);
+    const fill = this.add.rectangle(GAME_W / 2 - 150, 48, 300 * (idx + 1) / ORDER.length, 10, 0xff8cb3, 1).setOrigin(0, 0.5);
+    this.hud.add([bar, fill, this.addText(GAME_W / 2, 68, `memory ${idx + 1} / ${ORDER.length}`, 9, "#aaa")]);
+    this.hud.add(this.add.rectangle(GAME_W / 2, GAME_H - 13, GAME_W, 26, 0x000000, 0.62));
+    this.hud.add(this.addText(GAME_W / 2, GAME_H - 9, "WASD/Arrows move · E/Enter interact · click/tap portals · M music", 10, "#aaa"));
+    if (this.sceneKey === "ending") {
+      this.timerText = this.addText(GAME_W / 2, 276, this.loveTimer(), 16, "#ffd166", true);
+      this.hud.add(this.timerText);
+    } else {
+      this.timerText = null;
+    }
+  }
+
+  drawTiledFloor(palette) {
+    const [a, b, line] = palette.map((v) => Number(v));
+    this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, a);
+    const g = this.add.graphics();
+    for (let y = 50; y < GAME_H - 34; y += 32) {
+      for (let x = 0; x < GAME_W; x += 32) {
+        g.fillStyle(((x / 32 + y / 32) % 2 ? b : a), 1).fillRect(x, y, 32, 32);
+        g.fillStyle(line, 1).fillRect(x, y, 32, 1).fillRect(x, y, 1, 32);
+      }
+    }
+  }
+
+  drawProps(props) {
+    for (const [kind, x, y, label] of props) {
+      if (kind === "calendar") this.calendar(x, y, label);
+      else if (kind === "phone") this.phone(x, y);
+      else if (kind === "pigeon") this.pigeon(x, y, label);
+      else if (kind === "houseBlue") this.house(x, y, 0x334d80, 0x5bb5f0, label);
+      else if (kind === "housePink") this.house(x, y, 0x6b3f61, 0xe8526b, label);
+      else if (kind === "laptop") this.laptop(x, y, label);
+      else if (kind === "screenBlue") this.screen(x, y, 0x5bb5f0, label);
+      else if (kind === "screenPink") this.screen(x, y, 0xe8526b, label);
+      else if (kind === "theater") this.theater(x, y, label);
+      else if (kind === "popcorn") this.popcorn(x, y);
+      else if (kind === "skribbl") this.skribbl(x, y);
+      else if (kind === "cards") this.cards(x, y);
+      else if (kind === "equalizer") this.equalizer(x, y);
+      else if (kind === "album") this.album(x, y);
+      else if (kind === "bedBlue") this.bed(x, y, 0x5bb5f0, label);
+      else if (kind === "bedPink") this.bed(x, y, 0xe8526b, label);
+      else if (kind === "sunrise") this.sunrise(x, y, label);
+      else if (kind === "flowers") this.flowers(x, y);
+      else if (kind === "garden") this.garden(x, y);
+      else if (kind === "titleStone") this.titleStone(x, y);
+      else if (kind === "hearts") this.heartField(x, y);
+      else if (kind === "planePath") this.planePath(x, y, label);
+      else if (kind === "chat") this.chatProp(x, y, label);
+      else if (kind === "music") this.musicProp(x, y, label);
+      else if (kind === "memory") this.memory(x, y, label);
+      else this.memory(x, y, label);
+    }
+  }
+
+  drawZones(zones) {
+    this.zones = zones.map((z) => {
+      const rect = new Phaser.Geom.Rectangle(z.x, z.y, z.w, z.h);
+      this.portal(z.x, z.y, z.w, z.h, z.label);
+      return { ...z, rect, cx: z.x + z.w / 2, cy: z.y + z.h / 2 };
+    });
+  }
+
+  portal(x, y, w, h, label) {
+    const g = this.add.graphics().setDepth(4);
+    g.lineStyle(3, 0xc9a2d6, 1).strokeRect(x, y, w, h);
+    g.fillStyle(0xc9a2d6, 0.13).fillRect(x + 8, y + 8, w - 16, h - 16);
+    this.addText(x + w / 2, y + h / 2 + 4, label, 12, "#ffffff", true).setDepth(5);
+    this.addText(x + w / 2, y - 12, "E / ENTER", 10, "#ffd166", true).setDepth(5);
+  }
+
+  drawCard(x, y, name, home, sprite, color) {
+    const card = this.add.rectangle(x + 100, y + 152, 200, 305, 0xffffff, 0.06).setStrokeStyle(3, Phaser.Display.Color.HexStringToColor(color).color);
+    card.setInteractive({ useHandCursor: true }).on("pointerdown", () => this.startRun(name));
+    this.add.image(x + 100, y + 140, sprite).setScale(2.1);
+    this.addText(x + 100, y + 235, name, 18, color, true);
+    this.addText(x + 100, y + 260, home, 11, "#ddd");
+    this.addText(x + 100, y + 284, name === "Laiba" ? "fair skin · pink outfit" : "blue outfit", 10, "#aaa");
+  }
+
+  drawButton(x, y, w, h, label) {
+    const c = this.add.container(x, y);
+    c.add(this.add.rectangle(w / 2, h / 2, w, h, 0x000000, 0.55).setStrokeStyle(2, 0xffd166));
+    c.add(this.addText(w / 2, h / 2 + 4, label, 12, "#ffd166", true));
+    c.setSize(w, h).setInteractive({ useHandCursor: true }).on("pointerdown", () => this.startRun(this.saved.playerChoice, this.saved.sceneKey));
+    return c;
+  }
+
+  addText(x, y, text, size, color, bold = false, wordWrap = 0) {
+    return this.add.text(x, y, text, {
+      fontFamily: "Courier New, monospace",
+      fontSize: `${size}px`,
+      fontStyle: bold ? "bold" : "normal",
+      color,
+      align: "center",
+      wordWrap: wordWrap ? { width: wordWrap } : undefined,
+    }).setOrigin(0.5);
+  }
+
+  clearAll() {
+    this.children.removeAll(true);
+    this.dialogueBox = null;
+    this.hud = null;
+    this.zones = [];
+  }
+
+  drawBackdrop(top, bottom) {
+    const g = this.add.graphics();
+    g.fillGradientStyle(top, top, bottom, bottom, 1).fillRect(0, 0, GAME_W, GAME_H);
+    for (let i = 0; i < 70; i += 1) {
+      this.add.rectangle((i * 43) % GAME_W, 65 + (i * 71) % 500, 2, 2, 0xffffff, 0.18);
+    }
+  }
+
+  calendar(x, y, label) {
+    this.add.rectangle(x + 65, y + 48, 130, 96, 0xffffff, 0.08).setStrokeStyle(2, 0xffd166);
+    this.add.rectangle(x + 65, y + 12, 130, 24, 0xe8526b, 1);
+    this.addText(x + 65, y + 18, "JAN 2026", 12, "#fff", true);
+    this.addText(x + 65, y + 67, "9", 36, "#ffd166", true);
+    this.addText(x + 65, y + 88, label, 10, "#f0e6d3");
+  }
+
+  phone(x, y) {
+    this.add.rectangle(x + 48, y + 80, 96, 160, 0x111111).setStrokeStyle(4, 0xff8cb3);
+    this.add.rectangle(x + 48, y + 72, 76, 118, 0x1f102d);
+    this.addText(x + 48, y + 78, "H", 44, "#ff5a8a", true);
+  }
+
+  pigeon(x, y, label) {
+    this.add.rectangle(x + 25, y + 36, 70, 70, 0x000000, 0).setStrokeStyle(2, 0x7ec8e3);
+    this.add.rectangle(x + 22, y + 35, 44, 30, 0xdfe6ee);
+    this.add.rectangle(x + 30, y + 24, 28, 20, 0xf7f9ff);
+    this.add.rectangle(x + 61, y + 30, 13, 7, 0xffbf69);
+    this.addText(x + 35, y + 92, label, 9, "#ddd");
+  }
+
+  house(x, y, body, roof, label) {
+    this.add.rectangle(x + 75, y + 96, 150, 105, body).setStrokeStyle(3, 0x47395f);
+    this.add.rectangle(x + 75, y + 45, 174, 32, roof);
+    this.add.rectangle(x + 75, y + 122, 34, 55, 0x3a263f);
+    this.add.rectangle(x + 35, y + 92, 30, 28, 0xffd88a);
+    this.add.rectangle(x + 115, y + 92, 30, 28, 0xffd88a);
+    this.addText(x + 75, y + 177, label, 12, "#f7e7ff");
+  }
+
+  laptop(x, y, label) {
+    this.add.rectangle(x + 75, y + 46, 150, 92, 0x1b2036).setStrokeStyle(3, 0x7ec8e3);
+    this.add.rectangle(x + 75, y + 42, 130, 58, 0x243b60);
+    this.addText(x + 75, y + 50, label, 11, "#c9e9ff");
+  }
+
+  screen(x, y, color, label) {
+    this.add.rectangle(x + 192, y + 175, 384, 350, color, 0.12).setStrokeStyle(3, color);
+    this.addText(x + 192, y + 34, label, 13, "#f0e6d3");
+  }
+
+  theater(x, y, label) {
+    this.add.rectangle(x + 310, y + 160, 620, 320, 0x05070d).setStrokeStyle(4, 0xc9a2d6);
+    this.add.rectangle(x + 310, y + 160, 470, 205, 0x18233b);
+    this.addText(x + 310, y + 165, label, 24, "#ffd166", true);
+  }
+
+  popcorn(x, y) {
+    this.add.rectangle(x + 40, y + 22, 80, 46, 0xd56b6b);
+    this.addText(x + 40, y + 26, "popcorn", 10, "#fff");
+  }
+
+  skribbl(x, y) {
+    this.add.rectangle(x + 260, y + 120, 520, 230, 0xf7f3e9).setStrokeStyle(4, 0x5bb5f0);
+    this.add.rectangle(x + 96, y + 105, 90, 70, 0xff8cb3);
+    this.add.rectangle(x + 226, y + 105, 90, 70, 0x7ec8e3);
+    this.add.rectangle(x + 356, y + 105, 90, 70, 0xffd166);
+    this.addText(x + 96, y + 150, "Name", 13, "#111");
+    this.addText(x + 226, y + 150, "Place", 13, "#111");
+    this.addText(x + 356, y + 150, "Animal", 13, "#111");
+    this.addText(x + 260, y + 240, "Laiba wins again", 16, "#2a1a3e", true);
+  }
+
+  cards(x, y) {
+    ["Skribbl.io", "Name Place", "Afshaan cheering"].forEach((line, i) => this.addText(x + 105, y + 18 + i * 24, line, 11, "#f0e6d3"));
+  }
+
+  equalizer(x, y) {
+    for (let i = 0; i < 13; i += 1) this.add.rectangle(x + i * 63, y + 110 - (i % 5) * 14, 36, 70 + (i % 4) * 24, 0x1ed760);
+  }
+
+  album(x, y) {
+    this.add.rectangle(x + 130, y + 95, 260, 190, 0x1ed760, 0.08).setStrokeStyle(3, 0x1ed760);
+    this.addText(x + 130, y + 55, "SPOTIFY JAM", 24, "#1ed760", true);
+    this.addText(x + 130, y + 105, SONGS[this.songIndex][1], 14, "#f0e6d3");
+  }
+
+  bed(x, y, color, label) {
+    this.add.rectangle(x + 125, y + 60, 250, 120, color, 0.28);
+    this.add.rectangle(x + 125, y + 20, 250, 40, color);
+    this.addText(x + 125, y + 96, label, 12, "#fff");
+  }
+
+  sunrise(x, y, label) {
+    this.add.circle(x + 140, y + 60, 78, 0xfff3b0, 0.18);
+    this.addText(x + 140, y + 78, label, 26, "#7a3351", true);
+  }
+
+  flowers(x, y) {
+    for (let i = 0; i < 7; i += 1) this.add.image(x + i * 22, y + (i % 2) * 12, "heart").setScale(0.42);
+  }
+
+  garden(x, y) {
+    for (let i = 0; i < 16; i += 1) {
+      this.add.rectangle(x + i * 54, y + 34, 24, 34, 0x6b3f25);
+      this.add.rectangle(x + i * 54, y, 62, 42, 0x2f663b);
+    }
+  }
+
+  titleStone(x, y) {
+    this.add.rectangle(x + 195, y + 92, 390, 110, 0x000000, 0.38).setStrokeStyle(3, 0xffd166);
+    this.addText(x + 195, y + 50, "AFSHAAN ♡ LAIBA", 38, "#ffd6e8", true);
+    this.addText(x + 195, y + 92, "Together since Jan 9, 2026 · 4:00 PM", 14, "#f0e6d3");
+  }
+
+  heartField(x, y) {
+    for (let i = 0; i < 8; i += 1) this.add.image(x + i * 82, y + Math.sin(i) * 25, "heart").setScale(0.55);
+  }
+
+  planePath(x, y, label) {
+    for (let i = 0; i < 9; i += 1) this.add.rectangle(x + i * 44, y + Math.sin(i) * 16, 26, 4, 0xc9a2d6);
+    this.addText(x + 192, y - 35, label, 12, "#c9a2d6");
+  }
+
+  chatProp(x, y, label) {
+    this.add.rectangle(x + 210, y + 70, 420, 92, 0xffffff, 0.08).setStrokeStyle(2, 0xff8cb3);
+    this.addText(x + 210, y + 56, label, 13, "#fff");
+  }
+
+  musicProp(x, y, label) {
+    this.add.rectangle(x + 140, y + 70, 280, 90, 0x000000, 0.36).setStrokeStyle(2, 0x1ed760);
+    this.addText(x + 140, y + 55, "♫ " + label, 13, "#1ed760", true);
+  }
+
+  memory(x, y, label) {
+    this.add.rectangle(x, y, 48, 48, 0x000000, 0.44).setStrokeStyle(2, 0xffd166);
+    this.add.image(x, y - 2, "spark").setScale(0.6);
+    this.addText(x, y + 40, label, 9, "#ddd");
+  }
+
+  emitHeart() {
+    if (Phaser.Math.Between(0, 100) > 96) {
+      const heart = this.add.image(this.player.x + Phaser.Math.Between(-12, 12), this.player.y - 28, "heart").setScale(0.35).setDepth(12);
+      this.tweens.add({ targets: heart, y: heart.y - 38, alpha: 0, duration: 900, onComplete: () => heart.destroy() });
+    }
+  }
+
+  followPartner() {
+    const dist = Phaser.Math.Distance.Between(this.partner.x, this.partner.y, this.player.x, this.player.y);
+    if (dist > 80) this.physics.moveToObject(this.partner, this.player, 112);
+    else this.partner.body.setVelocity(0);
+  }
+
+  startMusic() {
+    if (!this.musicOn || this.audio) return;
+    this.audio = new Audio(SONGS[this.songIndex][0]);
+    this.audio.volume = 0.18;
+    this.audio.crossOrigin = "anonymous";
+    this.audio.onended = () => {
+      this.audio = null;
+      this.songIndex = (this.songIndex + 1) % SONGS.length;
+      this.startMusic();
+      this.drawHud();
+    };
+    this.audio.play().catch(() => {});
+  }
+
+  toggleMusic() {
+    this.musicOn = !this.musicOn;
+    if (!this.musicOn && this.audio) {
+      this.audio.pause();
+      this.audio = null;
+    } else {
+      this.startMusic();
+    }
+    this.drawHud();
+  }
+
+  loveTimer() {
+    const sec = Math.floor(Math.max(0, Date.now() - START_DATE.getTime()) / 1000);
+    const days = Math.floor(sec / 86400);
+    const h = Math.floor((sec % 86400) / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    return `${days} days · ${h}h ${m}m ${s}s since together`;
+  }
+
+  save() {
+    if (!this.playerChoice) return;
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ playerChoice: this.playerChoice, sceneKey: this.sceneKey }));
+  }
+
+  loadSave() {
+    try {
+      return JSON.parse(localStorage.getItem(SAVE_KEY));
+    } catch {
+      return null;
+    }
+  }
+
+  handlePointer(pointer) {
+    if (this.mode === "title") {
+      this.drawSelect();
+      return;
+    }
+    if (this.dialogue.length) {
+      this.advanceDialogue();
+      return;
+    }
+    if (this.mode !== "play") return;
+    const zone = this.zones?.find((z) => Phaser.Geom.Rectangle.Contains(z.rect, pointer.x, pointer.y));
+    if (zone) this.trigger(zone.type);
+  }
+
+  mobileControls() {
+    document.querySelectorAll("[data-dir]").forEach((button) => {
+      const dir = button.dataset.dir;
+      const on = (value) => {
+        this.virtual[dir] = value;
+      };
+      button.addEventListener("pointerdown", (e) => { e.preventDefault(); on(true); });
+      button.addEventListener("pointerup", () => on(false));
+      button.addEventListener("pointercancel", () => on(false));
+      button.addEventListener("pointerleave", () => on(false));
+    });
+    document.getElementById("act-btn").addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      this.tryInteract();
+    });
+    document.getElementById("music-btn").addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      this.toggleMusic();
+    });
+  }
+}
+
+new Phaser.Game({
+  type: Phaser.AUTO,
+  parent: "game",
+  width: GAME_W,
+  height: GAME_H,
+  backgroundColor: "#090814",
+  pixelArt: true,
+  physics: {
+    default: "arcade",
+    arcade: { debug: false },
+  },
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+  },
+  scene: [BootScene, GameScene],
+});

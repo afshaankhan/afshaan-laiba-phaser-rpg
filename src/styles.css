@@ -1,0 +1,98 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 140, 179, 0.16), transparent 28rem),
+    radial-gradient(circle at 75% 80%, rgba(126, 200, 227, 0.12), transparent 30rem),
+    #090814;
+  color: #f7ecff;
+  font-family: "Courier New", ui-monospace, monospace;
+  touch-action: none;
+}
+
+#game-shell {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+#game {
+  width: min(100vw, calc(100vh * 1.5));
+  height: min(100vh, calc(100vw / 1.5));
+  border: 4px solid #c9a2d6;
+  box-shadow: 0 0 42px rgba(201, 162, 214, 0.35);
+  background: #090814;
+}
+
+#game canvas {
+  image-rendering: pixelated;
+  display: block;
+}
+
+#mobile-controls {
+  position: fixed;
+  inset: auto 16px 16px 16px;
+  display: none;
+  justify-content: space-between;
+  align-items: end;
+  pointer-events: none;
+}
+
+#mobile-controls button {
+  pointer-events: auto;
+  width: 52px;
+  height: 52px;
+  border: 2px solid rgba(255, 255, 255, 0.42);
+  border-radius: 8px;
+  background: rgba(9, 8, 20, 0.68);
+  color: #fff;
+  font: 700 18px "Courier New", monospace;
+  touch-action: none;
+  backdrop-filter: blur(6px);
+}
+
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 52px);
+  grid-template-rows: repeat(3, 52px);
+  gap: 4px;
+}
+
+.dpad [data-dir="up"] {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.dpad [data-dir="left"] {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.dpad [data-dir="down"] {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.dpad [data-dir="right"] {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  #mobile-controls {
+    display: flex;
+  }
+}
