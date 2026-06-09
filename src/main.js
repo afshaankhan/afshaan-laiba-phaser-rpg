@@ -18,9 +18,11 @@ const SONGS = [
   ["https://p.scdn.co/mp3-preview/0dcffaf83437720696060e3a836b91eb9f47bba3?cid=2feb4729ba5145d7a7fd92f2af83cf0d", "Mazzy Star - Fade Into You"],
 ];
 
-const ORDER = ["hinge", "chat", "distance", "facetime", "movies", "games", "spotify", "sleep", "morning", "ending"];
+const ORDER = ["world", "hinge", "chat", "distance", "facetime", "movies", "games", "spotify", "sleep", "morning", "ending"];
+const CHAPTER_ORDER = ORDER.filter((key) => key !== "world");
 
 const MEMORY_GOAL = {
+  world: 0,
   hinge: 4,
   chat: 4,
   distance: 5,
@@ -32,6 +34,31 @@ const MEMORY_GOAL = {
   morning: 4,
   ending: 5,
 };
+
+const WORLD_GROWTH_GOALS = {
+  frisco: 3,
+  ellicott: 3,
+  callBridge: 4,
+  memoryTree: 5,
+};
+
+const WORLD_PLACES = {
+  frisco: { label: "Frisco Room", target: "hinge", x: 112, y: 168, w: 190, h: 150 },
+  ellicott: { label: "Ellicott City Room", target: "chat", x: 658, y: 168, w: 190, h: 150 },
+  callBridge: { label: "Call Bridge", target: "distance", x: 377, y: 236, w: 206, h: 130 },
+  memoryTree: { label: "Memory Tree", target: "ending", x: 377, y: 420, w: 206, h: 130 },
+};
+
+const WORLD_TASKS = [
+  { id: "send-good-morning", place: "frisco", label: "Send good morning text", item: "Morning Note", reward: 1 },
+  { id: "save-song", place: "callBridge", label: "Save a song for the Jam", item: "Shared Song", reward: 1 },
+  { id: "plan-movie", place: "ellicott", label: "Plan movie night", item: "Movie Ticket", reward: 1 },
+  { id: "practice-doodle", place: "memoryTree", label: "Practice Skribbl doodle", item: "Tiny Doodle", reward: 1 },
+  { id: "charge-phone", place: "callBridge", label: "Charge phone before call", item: "Full Battery", reward: 1 },
+  { id: "pack-kisses", place: "memoryTree", label: "Pack phone-screen kisses", item: "Pocket Kiss", reward: 1 },
+  { id: "share-playlist", place: "callBridge", label: "Share playlist loop", item: "Playlist Loop", reward: 1 },
+  { id: "write-check-in", place: "ellicott", label: "Write a soft check-in", item: "Soft Check-in", reward: 1 },
+];
 
 const MEMORY_LINES = {
   hinge_jan9: ["Memory shard: Jan 9, 2026.", "A random Friday became the day everything started."],
@@ -148,6 +175,27 @@ const SCENE_MEMORY_ZONES = {
 };
 
 const SCENES = {
+  world: {
+    title: "Together World",
+    quest: "Grow places, complete errands, then enter memories",
+    palette: ["0x0d1828", "0x14283d", "0x244765"],
+    start: [480, 500],
+    partner: [535, 500],
+    props: [
+      ["worldPlace", 112, 168, "Frisco Room"],
+      ["worldPlacePink", 658, 168, "Ellicott City Room"],
+      ["worldBridge", 377, 236, "Call Bridge"],
+      ["worldTree", 377, 420, "Memory Tree"],
+      ["memory", 480, 128, "Togetherness"],
+    ],
+    zones: [
+      { type: "world_frisco", x: 112, y: 168, w: 190, h: 150, label: "Frisco Room" },
+      { type: "world_ellicott", x: 658, y: 168, w: 190, h: 150, label: "Ellicott City" },
+      { type: "world_bridge", x: 377, y: 236, w: 206, h: 130, label: "Call Bridge" },
+      { type: "world_tree", x: 377, y: 420, w: 206, h: 130, label: "Memory Tree" },
+      { type: "world_errand", x: 424, y: 112, w: 112, h: 92, label: "Errand Board" },
+    ],
+  },
   hinge: {
     title: "Jan 9, 2026 - Hinge Match",
     quest: "Inspect the Hinge phone",
@@ -506,11 +554,11 @@ class GameScene extends Phaser.Scene {
     this.addText(GAME_W / 2, 595, "Desktop: WASD/Arrows + E · Mobile: D-pad + E", 11, "#aaa");
   }
 
-  startRun(choice, sceneKey = "hinge") {
+  startRun(choice, sceneKey = "world") {
     this.playerChoice = choice;
     this.sceneKey = sceneKey;
     this.mode = "play";
-    if (!this.saved || sceneKey === "hinge") this.progress = this.defaultProgress();
+    if (!this.saved || sceneKey === "world") this.progress = this.defaultProgress();
     this.playStartedAt = Date.now();
     this.startMusic();
     this.loadMap(sceneKey);
@@ -578,17 +626,21 @@ class GameScene extends Phaser.Scene {
       return;
     }
     const nextMap = {
-      phone: "chat",
-      chat_scene: "distance",
-      facetime_btn: "facetime",
-      facetime_next: "movies",
-      next: "games",
-      next2: "spotify",
-      next3: "sleep",
-      next4: "morning",
-      next5: "ending",
+      phone: "world",
+      chat_scene: "world",
+      facetime_btn: "world",
+      facetime_next: "world",
+      next: "world",
+      next2: "world",
+      next3: "world",
+      next4: "world",
+      next5: "world",
     };
-    if (nextMap[type] && !this.sceneReadyToLeave(this.sceneKey)) {
+    if (type.startsWith("world_")) {
+      this.handleWorldAction(type);
+      return;
+    }
+    if (nextMap[type] && this.sceneKey !== "world" && !this.sceneReadyToLeave(this.sceneKey)) {
       this.showDialogue([
         "Chapter gate locked.",
         `Collect ${this.remainingMemories(this.sceneKey)} more memory shard${this.remainingMemories(this.sceneKey) === 1 ? "" : "s"} in this map first.`,
@@ -596,12 +648,96 @@ class GameScene extends Phaser.Scene {
       ], null);
       return;
     }
-    if (nextMap[type]) this.markChapterComplete(this.sceneKey);
+    if (nextMap[type] && this.sceneKey !== "world") this.markChapterComplete(this.sceneKey);
     this.showDialogue(DIALOGUE[type] || ["Memory unlocked."], nextMap[type] ? () => this.loadMap(nextMap[type]) : null);
   }
 
+  handleWorldAction(type) {
+    if (type === "world_errand") {
+      this.runErrand();
+      return;
+    }
+    const map = {
+      world_frisco: ["frisco", "hinge"],
+      world_ellicott: ["ellicott", "chat"],
+      world_bridge: ["callBridge", this.nextBridgeMemory()],
+      world_tree: ["memoryTree", this.nextTreeMemory()],
+    };
+    const [place, target] = map[type] || [];
+    if (!place || !target) return;
+    if (!this.placeReady(place, target)) {
+      this.showDialogue([
+        `${WORLD_PLACES[place].label} needs more care first.`,
+        `Complete errands and grow it to level ${this.placeRequiredLevel(place, target)}.`,
+        "Use the Errand Board near the top of Together World.",
+      ], null);
+      return;
+    }
+    this.showDialogue([
+      `Entering ${WORLD_PLACES[place].label}.`,
+      "Explore it, collect every shard, then return to Together World.",
+    ], () => this.loadMap(target));
+  }
+
+  nextBridgeMemory() {
+    if (!this.progress.completedChapters.includes("distance")) return "distance";
+    if (!this.progress.completedChapters.includes("facetime")) return "facetime";
+    if (!this.progress.completedChapters.includes("movies")) return "movies";
+    return "spotify";
+  }
+
+  nextTreeMemory() {
+    if (!this.progress.completedChapters.includes("games")) return "games";
+    if (!this.progress.completedChapters.includes("sleep")) return "sleep";
+    if (!this.progress.completedChapters.includes("morning")) return "morning";
+    return "ending";
+  }
+
+  placeRequiredLevel(place, target) {
+    if (target === "hinge" || target === "chat") return 0;
+    if (target === "distance" || target === "games") return 1;
+    if (target === "facetime" || target === "sleep") return 2;
+    if (target === "movies" || target === "morning") return 3;
+    return 4;
+  }
+
+  placeReady(place, target) {
+    return (this.progress.growth[place] || 0) >= this.placeRequiredLevel(place, target);
+  }
+
+  runErrand() {
+    const task = WORLD_TASKS.find((t) => !this.progress.completedTasks.includes(t.id));
+    if (!task) {
+      this.showDialogue([
+        "Errand Board complete.",
+        "All daily-love tasks are done for this build.",
+        "Together World is fully grown for the current story.",
+      ], null);
+      return;
+    }
+    this.progress.completedTasks.push(task.id);
+    this.progress.inventory.push(task.item);
+    this.progress.growth[task.place] = Math.min(WORLD_GROWTH_GOALS[task.place], (this.progress.growth[task.place] || 0) + task.reward);
+    this.save();
+    this.showDialogue([
+      `Errand complete: ${task.label}.`,
+      `Item received: ${task.item}.`,
+      `${WORLD_PLACES[task.place].label} growth is now ${this.progress.growth[task.place]} / ${WORLD_GROWTH_GOALS[task.place]}.`,
+    ], () => this.drawHud());
+  }
+
   defaultProgress() {
-    return { version: SAVE_VERSION, collected: [], completedChapters: [], totalPlaySeconds: 0, lastScene: "hinge", lastPosition: null };
+    return {
+      version: SAVE_VERSION,
+      collected: [],
+      completedChapters: [],
+      completedTasks: [],
+      inventory: [],
+      growth: { frisco: 0, ellicott: 0, callBridge: 0, memoryTree: 0 },
+      totalPlaySeconds: 0,
+      lastScene: "world",
+      lastPosition: null,
+    };
   }
 
   currentPlaySeconds() {
@@ -693,11 +829,11 @@ class GameScene extends Phaser.Scene {
     this.journalOpen = true;
     this.journal = this.add.container(0, 0).setDepth(150);
     this.journal.add(this.add.rectangle(GAME_W / 2, GAME_H / 2, 720, 500, 0x050510, 0.96).setStrokeStyle(3, 0xffd166));
-    this.journal.add(this.addText(GAME_W / 2, 98, "Memory Journal", 28, "#ffd6e8", true));
-    this.journal.add(this.addText(GAME_W / 2, 128, `${this.progress.collected.length} / ${Object.keys(MEMORY_LINES).length} shards · ${this.formatPlayTime()} played · autosaved`, 12, "#f0e6d3"));
+    this.journal.add(this.addText(GAME_W / 2, 82, "Love Log / Item Box", 26, "#ffd6e8", true));
+    this.journal.add(this.addText(GAME_W / 2, 112, `${this.progress.collected.length} / ${Object.keys(MEMORY_LINES).length} shards · ${this.formatPlayTime()} played · autosaved`, 12, "#f0e6d3"));
     const startX = 170;
-    const startY = 164;
-    ORDER.forEach((key, i) => {
+    const startY = 142;
+    CHAPTER_ORDER.forEach((key, i) => {
       const x = startX + (i % 2) * 330;
       const y = startY + Math.floor(i / 2) * 58;
       const count = this.sceneCollected(key);
@@ -707,7 +843,13 @@ class GameScene extends Phaser.Scene {
       this.journal.add(this.addText(x, y, `${done ? "✓" : "•"} ${label}`, 11, done ? "#91e5aa" : "#ffd166", true).setOrigin(0, 0.5));
       this.journal.add(this.addText(x, y + 19, `${count}/${goal} memory shards`, 10, "#aaa").setOrigin(0, 0.5));
     });
-    this.journal.add(this.addText(GAME_W / 2, GAME_H - 92, "J / ESC closes · S saves · Explore each map before entering the next portal.", 11, "#aaa"));
+    const growthLines = Object.entries(this.progress.growth).map(([k, v]) => `${WORLD_PLACES[k]?.label || k}: ${v}/${WORLD_GROWTH_GOALS[k]}`);
+    this.journal.add(this.addText(178, 448, "Place Growth", 12, "#7ec8e3", true).setOrigin(0, 0.5));
+    growthLines.forEach((line, i) => this.journal.add(this.addText(178, 470 + i * 17, line, 10, "#ddd").setOrigin(0, 0.5)));
+    const inv = this.progress.inventory.slice(-6);
+    this.journal.add(this.addText(570, 448, "Item Box", 12, "#ffd166", true).setOrigin(0, 0.5));
+    this.journal.add(this.addText(570, 470, inv.length ? inv.join(" · ") : "empty", 10, "#ddd").setOrigin(0, 0.5));
+    this.journal.add(this.addText(GAME_W / 2, GAME_H - 38, "J / ESC closes · S saves · Errands grow places and unlock deeper memories.", 11, "#aaa"));
   }
 
   showDialogue(lines, callback) {
@@ -749,9 +891,11 @@ class GameScene extends Phaser.Scene {
     const idx = ORDER.indexOf(this.sceneKey);
     const bar = this.add.rectangle(GAME_W / 2, 48, 300, 10, 0xffffff, 0.12).setStrokeStyle(1, 0xffffff, 0.22);
     const fill = this.add.rectangle(GAME_W / 2 - 150, 48, 300 * (idx + 1) / ORDER.length, 10, 0xff8cb3, 1).setOrigin(0, 0.5);
-    const shardText = `${this.sceneCollected(this.sceneKey)} / ${MEMORY_GOAL[this.sceneKey]} shards`;
+    const shardText = this.sceneKey === "world"
+      ? `growth ${Object.values(this.progress.growth).reduce((a, b) => a + b, 0)} / ${Object.values(WORLD_GROWTH_GOALS).reduce((a, b) => a + b, 0)}`
+      : `${this.sceneCollected(this.sceneKey)} / ${MEMORY_GOAL[this.sceneKey]} shards`;
     this.playTimeText = this.addText(GAME_W - 18, 68, `play time ${this.formatPlayTime()}`, 9, "#aaa").setOrigin(1, 0.5);
-    this.hud.add([bar, fill, this.addText(GAME_W / 2, 68, `chapter ${idx + 1} / ${ORDER.length} · ${shardText}`, 9, "#aaa"), this.playTimeText]);
+    this.hud.add([bar, fill, this.addText(GAME_W / 2, 68, `${this.sceneKey === "world" ? "overworld" : `chapter ${idx} / ${CHAPTER_ORDER.length}`} · ${shardText}`, 9, "#aaa"), this.playTimeText]);
     this.hud.add(this.add.rectangle(GAME_W / 2, GAME_H - 13, GAME_W, 26, 0x000000, 0.62));
     this.hud.add(this.addText(GAME_W / 2, GAME_H - 9, "WASD/Arrows move · E/Enter interact · J journal · S save · M music", 10, "#aaa"));
     if (this.sceneKey === "ending") {
@@ -777,6 +921,10 @@ class GameScene extends Phaser.Scene {
   drawProps(props) {
     for (const [kind, x, y, label] of props) {
       if (kind === "calendar") this.calendar(x, y, label);
+      else if (kind === "worldPlace") this.worldPlace(x, y, label, 0x5bb5f0, "frisco");
+      else if (kind === "worldPlacePink") this.worldPlace(x, y, label, 0xe8526b, "ellicott");
+      else if (kind === "worldBridge") this.worldBridge(x, y, label);
+      else if (kind === "worldTree") this.worldTree(x, y, label);
       else if (kind === "phone") this.phone(x, y);
       else if (kind === "pigeon") this.pigeon(x, y, label);
       else if (kind === "houseBlue") this.house(x, y, 0x334d80, 0x5bb5f0, label);
@@ -993,6 +1141,34 @@ class GameScene extends Phaser.Scene {
     this.add.rectangle(x, y, 48, 48, 0x000000, 0.44).setStrokeStyle(2, 0xffd166);
     this.add.image(x, y - 2, "spark").setScale(0.6);
     this.addText(x, y + 40, label, 9, "#ddd");
+  }
+
+  worldPlace(x, y, label, color, placeKey) {
+    const level = this.progress.growth[placeKey] || 0;
+    this.add.rectangle(x + 95, y + 75, 190, 150, color, 0.16 + level * 0.04).setStrokeStyle(3, color);
+    this.add.rectangle(x + 95, y + 85, 118 + level * 10, 78 + level * 5, color, 0.32);
+    this.add.rectangle(x + 95, y + 130, 34, 45, 0x24152f);
+    for (let i = 0; i < level; i += 1) this.add.image(x + 38 + i * 28, y + 38, "heart").setScale(0.32);
+    this.addText(x + 95, y + 28, label, 13, "#f0e6d3", true);
+    this.addText(x + 95, y + 168, `growth ${level}/${WORLD_GROWTH_GOALS[placeKey]}`, 10, "#aaa");
+  }
+
+  worldBridge(x, y, label) {
+    const level = this.progress.growth.callBridge || 0;
+    this.add.rectangle(x + 103, y + 65, 206, 130, 0x7ec8e3, 0.13 + level * 0.035).setStrokeStyle(3, 0x7ec8e3);
+    for (let i = 0; i < 7 + level; i += 1) this.add.rectangle(x + 26 + i * 22, y + 65 + Math.sin(i) * 18, 16, 4, 0xc9a2d6);
+    this.addText(x + 103, y + 30, label, 14, "#c9e9ff", true);
+    this.addText(x + 103, y + 154, `call bridge ${level}/${WORLD_GROWTH_GOALS.callBridge}`, 10, "#aaa");
+  }
+
+  worldTree(x, y, label) {
+    const level = this.progress.growth.memoryTree || 0;
+    this.add.rectangle(x + 103, y + 65, 206, 130, 0x000000, 0.18).setStrokeStyle(3, 0xffd166);
+    this.add.rectangle(x + 103, y + 94, 28, 60, 0x6b3f25);
+    this.add.circle(x + 103, y + 52, 44 + level * 5, 0x2f663b, 0.9);
+    for (let i = 0; i < level + 1; i += 1) this.add.image(x + 60 + i * 18, y + 42 + (i % 2) * 18, "heart").setScale(0.28);
+    this.addText(x + 103, y + 28, label, 14, "#ffd166", true);
+    this.addText(x + 103, y + 154, `memory tree ${level}/${WORLD_GROWTH_GOALS.memoryTree}`, 10, "#aaa");
   }
 
   emitHeart() {
