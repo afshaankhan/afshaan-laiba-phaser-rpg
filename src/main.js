@@ -4,6 +4,7 @@ const GAME_W = 960;
 const GAME_H = 640;
 const START_DATE = new Date("2026-01-09T16:00:00-06:00");
 const SAVE_KEY = "afshaan-laiba-phaser-rpg-save";
+const SAVE_VERSION = 2;
 
 const SONGS = [
   ["https://p.scdn.co/mp3-preview/0d95bb81dbac4d96607c35dc8dae36a85b3e85ed?cid=2feb4729ba5145d7a7fd92f2af83cf0d", "wave to earth - light"],
@@ -18,6 +19,133 @@ const SONGS = [
 ];
 
 const ORDER = ["hinge", "chat", "distance", "facetime", "movies", "games", "spotify", "sleep", "morning", "ending"];
+
+const MEMORY_GOAL = {
+  hinge: 4,
+  chat: 4,
+  distance: 5,
+  facetime: 5,
+  movies: 4,
+  games: 5,
+  spotify: 4,
+  sleep: 4,
+  morning: 4,
+  ending: 5,
+};
+
+const MEMORY_LINES = {
+  hinge_jan9: ["Memory shard: Jan 9, 2026.", "A random Friday became the day everything started."],
+  hinge_pigeon: ["Memory shard: pigeon photo.", "The tiny pet photo that accidentally opened the whole story."],
+  hinge_song: ["Memory shard: first song.", "Mystery of Love enters the save file."],
+  hinge_firstspark: ["Memory shard: first spark.", "One joke. One reply. One new timeline."],
+  chat_easy: ["Memory shard: easy talking.", "The conversation did not feel forced. That mattered."],
+  chat_movie: ["Memory shard: Call Me By Your Name.", "A movie reference turned into a shared little universe."],
+  chat_laugh: ["Memory shard: first laugh.", "The microwave joke survives as legendary lore."],
+  chat_daily: ["Memory shard: daily texts.", "The small messages started becoming routine."],
+  distance_frisco: ["Memory shard: Frisco.", "Afshaan's side of the map is saved."],
+  distance_ellicott: ["Memory shard: Ellicott City.", "Laiba's side of the map is saved."],
+  distance_miles: ["Memory shard: 1,300 miles.", "The map says far. The calls say close."],
+  distance_bridge: ["Memory shard: bridge.", "FaceTime becomes the road between both homes."],
+  distance_timezone: ["Memory shard: timing.", "Even schedules learn to bend around love."],
+  facetime_daily: ["Memory shard: daily FaceTime.", "The call window becomes a room you both live in."],
+  facetime_smile: ["Memory shard: watching smiles.", "Sometimes the screen is not the main thing."],
+  facetime_kisses: ["Memory shard: screen kisses.", "Multiple kisses on the phone screen. Completely valid magic."],
+  facetime_games: ["Memory shard: she plays.", "Laiba plays. Afshaan watches like it is cinema."],
+  facetime_night: ["Memory shard: late calls.", "The day closes better when the call is still there."],
+  movies_popcorn: ["Memory shard: popcorn.", "Two snacks. One movie night."],
+  movies_meet: ["Memory shard: Google Meet.", "The distance gets screen-shared."],
+  movies_reactions: ["Memory shard: reactions.", "He watches the movie, but also watches her."],
+  movies_sync: ["Memory shard: synced time.", "Pressing play together counts as a date."],
+  games_skribbl: ["Memory shard: Skribbl.", "The drawings are questionable. The fun is not."],
+  games_npat: ["Memory shard: Name Place Animal Thing.", "Classic game. Serious competition."],
+  games_winner: ["Memory shard: Laiba wins.", "Afshaan remains proudly biased."],
+  games_cheer: ["Memory shard: cheering.", "Big fan behavior unlocked."],
+  games_guess: ["Memory shard: impossible guess.", "HOW did you guess that from that?"],
+  spotify_jam: ["Memory shard: Spotify Jam.", "Songs become checkpoints."],
+  spotify_playlist: ["Memory shard: playlist.", "The soundtrack keeps looping through the story."],
+  spotify_wave: ["Memory shard: wave to earth.", "Soft songs, softer feelings."],
+  spotify_mystery: ["Memory shard: Mystery of Love.", "The first song keeps following you both."],
+  sleep_phone: ["Memory shard: phone propped up.", "The call stays awake while you both fall asleep."],
+  sleep_breathe: ["Memory shard: quiet breathing.", "Peaceful, tiny, real."],
+  sleep_safe: ["Memory shard: safe feeling.", "Long distance loses another night."],
+  sleep_dream: ["Memory shard: dream save.", "Autosaved before sunrise."],
+  morning_text: ["Memory shard: good morning.", "The best notification of the day."],
+  morning_window: ["Memory shard: sunrise.", "Morning makes the map warmer."],
+  morning_routine: ["Memory shard: routine.", "Love is also repetition."],
+  morning_next: ["Memory shard: next month.", "The story is designed for updates."],
+  ending_hinge: ["Final shard: Hinge.", "Chapter one is archived."],
+  ending_calls: ["Final shard: calls.", "Everyday calls are archived."],
+  ending_movies: ["Final shard: movies.", "Movie nights are archived."],
+  ending_games: ["Final shard: games.", "Game nights are archived."],
+  ending_songs: ["Final shard: songs.", "The soundtrack is archived."],
+};
+
+const SCENE_MEMORY_ZONES = {
+  hinge: [
+    ["hinge_jan9", 96, 92, 130, 96, "Jan 9"],
+    ["hinge_pigeon", 260, 270, 90, 90, "Pigeon photo"],
+    ["hinge_song", 502, 342, 64, 64, "Mystery song"],
+    ["hinge_firstspark", 765, 135, 80, 72, "First spark"],
+  ],
+  chat: [
+    ["chat_easy", 362, 150, 210, 76, "Easy talking"],
+    ["chat_movie", 610, 154, 280, 92, "Movie reference"],
+    ["chat_laugh", 112, 160, 90, 90, "First laugh"],
+    ["chat_daily", 458, 355, 90, 90, "Daily texts"],
+  ],
+  distance: [
+    ["distance_frisco", 88, 148, 165, 160, "Frisco"],
+    ["distance_ellicott", 716, 148, 165, 160, "Ellicott City"],
+    ["distance_miles", 330, 226, 290, 92, "1,300 miles"],
+    ["distance_bridge", 405, 368, 150, 100, "Call bridge"],
+    ["distance_timezone", 390, 92, 180, 82, "Timing"],
+  ],
+  facetime: [
+    ["facetime_daily", 60, 95, 190, 164, "Daily call"],
+    ["facetime_smile", 585, 95, 190, 164, "Her smile"],
+    ["facetime_kisses", 390, 298, 180, 76, "Screen kisses"],
+    ["facetime_games", 700, 300, 160, 90, "She plays"],
+    ["facetime_night", 130, 310, 160, 90, "Late calls"],
+  ],
+  movies: [
+    ["movies_popcorn", 140, 450, 90, 58, "Popcorn"],
+    ["movies_meet", 155, 84, 620, 92, "Google Meet"],
+    ["movies_reactions", 420, 230, 160, 72, "Reactions"],
+    ["movies_sync", 448, 350, 100, 80, "Synced play"],
+  ],
+  games: [
+    ["games_skribbl", 220, 118, 520, 230, "Skribbl"],
+    ["games_npat", 125, 395, 210, 90, "NPAT"],
+    ["games_winner", 735, 398, 90, 90, "Winner"],
+    ["games_cheer", 620, 390, 90, 90, "Cheer"],
+    ["games_guess", 418, 250, 130, 70, "Impossible guess"],
+  ],
+  spotify: [
+    ["spotify_jam", 350, 118, 260, 190, "Jam"],
+    ["spotify_playlist", 70, 250, 250, 150, "Playlist"],
+    ["spotify_wave", 650, 330, 120, 76, "wave to earth"],
+    ["spotify_mystery", 640, 150, 280, 90, "Mystery of Love"],
+  ],
+  sleep: [
+    ["sleep_phone", 455, 330, 90, 90, "Phone"],
+    ["sleep_breathe", 402, 185, 156, 70, "Quiet"],
+    ["sleep_safe", 145, 250, 250, 120, "Safe"],
+    ["sleep_dream", 565, 250, 250, 120, "Dream"],
+  ],
+  morning: [
+    ["morning_text", 262, 245, 420, 92, "Morning text"],
+    ["morning_window", 340, 90, 280, 130, "Sunrise"],
+    ["morning_routine", 118, 420, 170, 70, "Routine"],
+    ["morning_next", 785, 420, 120, 70, "Next month"],
+  ],
+  ending: [
+    ["ending_hinge", 215, 310, 70, 70, "Hinge"],
+    ["ending_calls", 365, 310, 70, 70, "Calls"],
+    ["ending_movies", 515, 310, 70, 70, "Movies"],
+    ["ending_games", 665, 310, 70, 70, "Games"],
+    ["ending_songs", 450, 398, 70, 70, "Songs"],
+  ],
+};
 
 const SCENES = {
   hinge: {
@@ -269,6 +397,9 @@ class GameScene extends Phaser.Scene {
     this.songIndex = Math.floor(Math.random() * SONGS.length);
     this.audio = null;
     this.virtual = { up: false, down: false, left: false, right: false };
+    this.progress = this.defaultProgress();
+    this.playStartedAt = Date.now();
+    this.nextAutosaveAt = 0;
   }
 
   create() {
@@ -282,13 +413,23 @@ class GameScene extends Phaser.Scene {
     if (saved?.playerChoice && saved?.sceneKey) {
       this.mode = "title";
       this.saved = saved;
+      this.progress = { ...this.defaultProgress(), ...(saved.progress || {}) };
+      this.playStartedAt = Date.now();
     }
     this.drawTitle();
     this.input.on("pointerdown", (pointer) => this.handlePointer(pointer));
+    window.addEventListener("beforeunload", () => {
+      if (this.mode === "play") this.save(false);
+    });
   }
 
-  update() {
-    if (this.mode !== "play" || this.dialogue.length) return;
+  update(time) {
+    if (this.mode === "play" && this.playTimeText) this.playTimeText.setText(`play time ${this.formatPlayTime()}`);
+    if (this.mode !== "play" || this.dialogue.length || this.journalOpen) return;
+    if (time > this.nextAutosaveAt) {
+      this.nextAutosaveAt = time + 5000;
+      this.save(false);
+    }
     const speed = 172;
     const body = this.player.body;
     const left = this.cursors.left.isDown || this.keys.A.isDown || this.virtual.left;
@@ -311,6 +452,18 @@ class GameScene extends Phaser.Scene {
     if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(key)) event.preventDefault();
     if (key === "m" || key === "M") {
       this.toggleMusic();
+      return;
+    }
+    if (key === "j" || key === "J") {
+      if (this.mode === "play") this.toggleJournal();
+      return;
+    }
+    if (key === "s" || key === "S") {
+      if (this.mode === "play") this.save(true);
+      return;
+    }
+    if (key === "Escape" && this.journalOpen) {
+      this.toggleJournal(false);
       return;
     }
     if (key === "Enter" || key === " " || key === "e" || key === "E") {
@@ -357,7 +510,8 @@ class GameScene extends Phaser.Scene {
     this.playerChoice = choice;
     this.sceneKey = sceneKey;
     this.mode = "play";
-    this.save();
+    if (!this.saved || sceneKey === "hinge") this.progress = this.defaultProgress();
+    this.playStartedAt = Date.now();
     this.startMusic();
     this.loadMap(sceneKey);
   }
@@ -370,12 +524,16 @@ class GameScene extends Phaser.Scene {
     this.drawTiledFloor(data.palette);
     this.drawProps(data.props);
     this.drawZones(data.zones);
+    this.drawMemoryZones(key);
     this.walls = this.physics.add.staticGroup();
     this.makeWalls();
     const pKey = this.playerChoice === "Laiba" ? "laiba" : "afshaan";
     const partnerKey = this.playerChoice === "Laiba" ? "afshaan" : "laiba";
     this.player = this.physics.add.sprite(data.start[0], data.start[1], pKey).setScale(1.35).setDepth(20);
     this.partner = this.physics.add.sprite(data.partner[0], data.partner[1], partnerKey).setScale(1.2).setDepth(19);
+    if (this.saved?.progress?.lastScene === key && this.saved.progress.lastPosition) {
+      this.player.setPosition(this.saved.progress.lastPosition.x, this.saved.progress.lastPosition.y);
+    }
     this.player.body.setSize(24, 28).setOffset(8, 38);
     this.partner.body.setSize(24, 28).setOffset(8, 38);
     this.physics.add.collider(this.player, this.walls);
@@ -402,6 +560,11 @@ class GameScene extends Phaser.Scene {
       this.advanceDialogue();
       return;
     }
+    const memory = this.memoryZones?.find((z) => Phaser.Geom.Rectangle.Overlaps(this.player.getBounds(), z.rect) || Phaser.Math.Distance.Between(this.player.x, this.player.y, z.cx, z.cy) < 96);
+    if (memory) {
+      this.collectMemory(memory);
+      return;
+    }
     const zone = this.zones?.find((z) => Phaser.Geom.Rectangle.Overlaps(this.player.getBounds(), z.rect) || Phaser.Math.Distance.Between(this.player.x, this.player.y, z.cx, z.cy) < 116);
     if (zone) this.trigger(zone.type);
     else if (this.zones?.length === 1) this.trigger(this.zones[0].type);
@@ -425,7 +588,126 @@ class GameScene extends Phaser.Scene {
       next4: "morning",
       next5: "ending",
     };
+    if (nextMap[type] && !this.sceneReadyToLeave(this.sceneKey)) {
+      this.showDialogue([
+        "Chapter gate locked.",
+        `Collect ${this.remainingMemories(this.sceneKey)} more memory shard${this.remainingMemories(this.sceneKey) === 1 ? "" : "s"} in this map first.`,
+        "Check the journal with J if you need the chapter list.",
+      ], null);
+      return;
+    }
+    if (nextMap[type]) this.markChapterComplete(this.sceneKey);
     this.showDialogue(DIALOGUE[type] || ["Memory unlocked."], nextMap[type] ? () => this.loadMap(nextMap[type]) : null);
+  }
+
+  defaultProgress() {
+    return { version: SAVE_VERSION, collected: [], completedChapters: [], totalPlaySeconds: 0, lastScene: "hinge", lastPosition: null };
+  }
+
+  currentPlaySeconds() {
+    return this.progress.totalPlaySeconds + Math.floor((Date.now() - this.playStartedAt) / 1000);
+  }
+
+  formatPlayTime() {
+    const sec = this.currentPlaySeconds();
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m ${s}s`;
+  }
+
+  sceneCollected(sceneKey) {
+    const ids = new Set((SCENE_MEMORY_ZONES[sceneKey] || []).map((z) => z[0]));
+    return this.progress.collected.filter((id) => ids.has(id)).length;
+  }
+
+  remainingMemories(sceneKey) {
+    return Math.max(0, (MEMORY_GOAL[sceneKey] || 0) - this.sceneCollected(sceneKey));
+  }
+
+  sceneReadyToLeave(sceneKey) {
+    return this.sceneCollected(sceneKey) >= (MEMORY_GOAL[sceneKey] || 0);
+  }
+
+  markChapterComplete(sceneKey) {
+    if (!this.progress.completedChapters.includes(sceneKey)) this.progress.completedChapters.push(sceneKey);
+    this.save();
+  }
+
+  collectMemory(zone) {
+    const already = this.progress.collected.includes(zone.id);
+    if (!already) {
+      this.progress.collected.push(zone.id);
+      this.save();
+      this.flashText(`Memory saved: ${zone.label}`);
+      this.spawnBurst(zone.cx, zone.cy);
+    }
+    const lines = MEMORY_LINES[zone.id] || [`Memory shard: ${zone.label}.`, "Saved to the journal."];
+    this.showDialogue(already ? [`Already saved: ${zone.label}.`, "This memory is in your journal."] : lines, () => this.drawHud());
+  }
+
+  drawMemoryZones(sceneKey) {
+    this.memoryZones = (SCENE_MEMORY_ZONES[sceneKey] || []).map(([id, x, y, w, h, label]) => {
+      const rect = new Phaser.Geom.Rectangle(x, y, w, h);
+      const done = this.progress.collected.includes(id);
+      this.memoryMarker(x + w / 2, y + h / 2, label, done);
+      return { id, x, y, w, h, label, rect, cx: x + w / 2, cy: y + h / 2 };
+    });
+  }
+
+  memoryMarker(x, y, label, done) {
+    const color = done ? 0x5bbf7a : 0xffd166;
+    this.add.rectangle(x, y, 38, 38, 0x000000, 0.4).setStrokeStyle(2, color).setDepth(7);
+    this.add.image(x, y - 2, done ? "heart" : "spark").setScale(0.48).setDepth(8);
+    this.addText(x, y + 33, done ? "saved" : label, 9, done ? "#91e5aa" : "#f0e6d3").setDepth(8);
+  }
+
+  spawnBurst(x, y) {
+    for (let i = 0; i < 12; i += 1) {
+      const p = this.add.image(x, y, i % 2 ? "spark" : "heart").setScale(0.28).setDepth(110);
+      this.tweens.add({
+        targets: p,
+        x: x + Phaser.Math.Between(-70, 70),
+        y: y + Phaser.Math.Between(-70, 25),
+        alpha: 0,
+        duration: 750,
+        onComplete: () => p.destroy(),
+      });
+    }
+  }
+
+  flashText(message) {
+    this.toast?.destroy();
+    this.toast = this.addText(GAME_W / 2, 94, message, 12, "#ffd166", true).setDepth(130);
+    this.tweens.add({ targets: this.toast, y: 76, alpha: 0, duration: 1500, delay: 900, onComplete: () => this.toast?.destroy() });
+  }
+
+  toggleJournal(force) {
+    const shouldOpen = typeof force === "boolean" ? force : !this.journalOpen;
+    if (!shouldOpen) {
+      this.journal?.destroy();
+      this.journalOpen = false;
+      return;
+    }
+    this.journal?.destroy();
+    this.journalOpen = true;
+    this.journal = this.add.container(0, 0).setDepth(150);
+    this.journal.add(this.add.rectangle(GAME_W / 2, GAME_H / 2, 720, 500, 0x050510, 0.96).setStrokeStyle(3, 0xffd166));
+    this.journal.add(this.addText(GAME_W / 2, 98, "Memory Journal", 28, "#ffd6e8", true));
+    this.journal.add(this.addText(GAME_W / 2, 128, `${this.progress.collected.length} / ${Object.keys(MEMORY_LINES).length} shards · ${this.formatPlayTime()} played · autosaved`, 12, "#f0e6d3"));
+    const startX = 170;
+    const startY = 164;
+    ORDER.forEach((key, i) => {
+      const x = startX + (i % 2) * 330;
+      const y = startY + Math.floor(i / 2) * 58;
+      const count = this.sceneCollected(key);
+      const goal = MEMORY_GOAL[key];
+      const done = count >= goal;
+      const label = SCENES[key].title;
+      this.journal.add(this.addText(x, y, `${done ? "✓" : "•"} ${label}`, 11, done ? "#91e5aa" : "#ffd166", true).setOrigin(0, 0.5));
+      this.journal.add(this.addText(x, y + 19, `${count}/${goal} memory shards`, 10, "#aaa").setOrigin(0, 0.5));
+    });
+    this.journal.add(this.addText(GAME_W / 2, GAME_H - 92, "J / ESC closes · S saves · Explore each map before entering the next portal.", 11, "#aaa"));
   }
 
   showDialogue(lines, callback) {
@@ -467,9 +749,11 @@ class GameScene extends Phaser.Scene {
     const idx = ORDER.indexOf(this.sceneKey);
     const bar = this.add.rectangle(GAME_W / 2, 48, 300, 10, 0xffffff, 0.12).setStrokeStyle(1, 0xffffff, 0.22);
     const fill = this.add.rectangle(GAME_W / 2 - 150, 48, 300 * (idx + 1) / ORDER.length, 10, 0xff8cb3, 1).setOrigin(0, 0.5);
-    this.hud.add([bar, fill, this.addText(GAME_W / 2, 68, `memory ${idx + 1} / ${ORDER.length}`, 9, "#aaa")]);
+    const shardText = `${this.sceneCollected(this.sceneKey)} / ${MEMORY_GOAL[this.sceneKey]} shards`;
+    this.playTimeText = this.addText(GAME_W - 18, 68, `play time ${this.formatPlayTime()}`, 9, "#aaa").setOrigin(1, 0.5);
+    this.hud.add([bar, fill, this.addText(GAME_W / 2, 68, `chapter ${idx + 1} / ${ORDER.length} · ${shardText}`, 9, "#aaa"), this.playTimeText]);
     this.hud.add(this.add.rectangle(GAME_W / 2, GAME_H - 13, GAME_W, 26, 0x000000, 0.62));
-    this.hud.add(this.addText(GAME_W / 2, GAME_H - 9, "WASD/Arrows move · E/Enter interact · click/tap portals · M music", 10, "#aaa"));
+    this.hud.add(this.addText(GAME_W / 2, GAME_H - 9, "WASD/Arrows move · E/Enter interact · J journal · S save · M music", 10, "#aaa"));
     if (this.sceneKey === "ending") {
       this.timerText = this.addText(GAME_W / 2, 276, this.loveTimer(), 16, "#ffd166", true);
       this.hud.add(this.timerText);
@@ -516,7 +800,7 @@ class GameScene extends Phaser.Scene {
       else if (kind === "planePath") this.planePath(x, y, label);
       else if (kind === "chat") this.chatProp(x, y, label);
       else if (kind === "music") this.musicProp(x, y, label);
-      else if (kind === "memory") this.memory(x, y, label);
+      else if (kind === "memory") continue;
       else this.memory(x, y, label);
     }
   }
@@ -758,9 +1042,21 @@ class GameScene extends Phaser.Scene {
     return `${days} days · ${h}h ${m}m ${s}s since together`;
   }
 
-  save() {
+  save(showToast = false) {
     if (!this.playerChoice) return;
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ playerChoice: this.playerChoice, sceneKey: this.sceneKey }));
+    const now = Date.now();
+    const progress = {
+      ...this.progress,
+      version: SAVE_VERSION,
+      totalPlaySeconds: this.currentPlaySeconds(),
+      lastScene: this.sceneKey,
+      lastPosition: this.player ? { x: Math.round(this.player.x), y: Math.round(this.player.y) } : this.progress.lastPosition,
+      savedAt: now,
+    };
+    this.progress = progress;
+    this.playStartedAt = now;
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ playerChoice: this.playerChoice, sceneKey: this.sceneKey, progress }));
+    if (showToast) this.flashText("Game saved");
   }
 
   loadSave() {
@@ -781,6 +1077,11 @@ class GameScene extends Phaser.Scene {
       return;
     }
     if (this.mode !== "play") return;
+    const memory = this.memoryZones?.find((z) => Phaser.Geom.Rectangle.Contains(z.rect, pointer.x, pointer.y));
+    if (memory) {
+      this.collectMemory(memory);
+      return;
+    }
     const zone = this.zones?.find((z) => Phaser.Geom.Rectangle.Contains(z.rect, pointer.x, pointer.y));
     if (zone) this.trigger(zone.type);
   }
