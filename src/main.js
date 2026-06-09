@@ -4,7 +4,19 @@ const GAME_W = 960;
 const GAME_H = 640;
 const START_DATE = new Date("2026-01-09T16:00:00-06:00");
 const SAVE_KEY = "afshaan-laiba-phaser-rpg-save";
+const SETTINGS_KEY = "afshaan-laiba-phaser-rpg-settings";
 const SAVE_VERSION = 2;
+
+const COLOR_OPTIONS = {
+  skin: [0xffe4d0, 0xf3c7a8, 0xd4a574],
+  hair: [0x8b5e3c, 0x5b3724, 0x19172a],
+  outfit: [0xe8526b, 0x5bb5f0, 0xc9a2d6, 0x1ed760, 0xffd166],
+};
+
+const DEFAULT_CUSTOM = {
+  Afshaan: { skin: 0xd4a574, hair: 0x19172a, outfit: 0x5bb5f0 },
+  Laiba: { skin: 0xffe4d0, hair: 0x8b5e3c, outfit: 0xe8526b },
+};
 
 const SONGS = [
   ["https://p.scdn.co/mp3-preview/0d95bb81dbac4d96607c35dc8dae36a85b3e85ed?cid=2feb4729ba5145d7a7fd92f2af83cf0d", "wave to earth - light"],
@@ -396,30 +408,41 @@ class BootScene extends Phaser.Scene {
   }
 
   makeSprites() {
-    this.makeCharacter("afshaan", 0x5bb5f0, 0xd4a574, 0x19172a);
-    this.makeCharacter("laiba", 0xe8526b, 0xffe4d0, 0x8b5e3c);
+    this.makeCharacterSet("afshaan", DEFAULT_CUSTOM.Afshaan.outfit, DEFAULT_CUSTOM.Afshaan.skin, DEFAULT_CUSTOM.Afshaan.hair, "Afshaan");
+    this.makeCharacterSet("laiba", DEFAULT_CUSTOM.Laiba.outfit, DEFAULT_CUSTOM.Laiba.skin, DEFAULT_CUSTOM.Laiba.hair, "Laiba");
     this.makeIcon("heart", 0xff8cb3);
     this.makeIcon("spark", 0xffd166);
   }
 
-  makeCharacter(key, outfit, skin, hair) {
+  makeCharacterSet(key, outfit, skin, hair, name = key) {
+    ["down", "up", "left", "right"].forEach((dir) => {
+      for (let frame = 0; frame < 3; frame += 1) this.makeCharacterFrame(`${key}_${dir}_${frame}`, outfit, skin, hair, name, dir, frame);
+    });
+    this.makeCharacterFrame(key, outfit, skin, hair, name, "down", 1);
+  }
+
+  makeCharacterFrame(key, outfit, skin, hair, name, dir, frame) {
     const g = this.add.graphics();
-    g.fillStyle(0x000000, 0.23).fillRect(5, 54, 28, 8);
-    g.fillStyle(outfit).fillRect(9, 24, 22, 30);
-    g.lineStyle(1, 0x000000, 0.28).strokeRect(9, 24, 22, 30);
+    const bob = frame === 1 ? -1 : 0;
+    const step = frame === 0 ? -3 : frame === 2 ? 3 : 0;
+    g.fillStyle(0x000000, 0.24).fillEllipse(20, 65, 30, 8);
+    g.fillStyle(outfit).fillRect(9, 24 + bob, 22, 30);
+    g.lineStyle(1, 0x000000, 0.28).strokeRect(9, 24 + bob, 22, 30);
     g.fillStyle(skin).fillRect(12, 8, 16, 16);
     g.fillStyle(hair);
-    if (key === "afshaan") {
+    if (name === "Afshaan") {
       g.fillRect(10, 3, 20, 8).fillRect(10, 9, 4, 10).fillRect(26, 9, 4, 10);
     } else {
       g.fillRect(10, 2, 20, 8).fillRect(9, 8, 5, 20).fillRect(26, 8, 5, 20).fillStyle(0xa97954).fillRect(14, 0, 12, 4);
     }
-    g.fillStyle(0xffffff).fillRect(15, 14, 3, 3).fillRect(22, 14, 3, 3);
-    g.fillStyle(0x111111).fillRect(16, 15, 2, 2).fillRect(23, 15, 2, 2);
+    if (dir !== "up") {
+      g.fillStyle(0xffffff).fillRect(dir === "left" ? 14 : 15, 14, 3, 3).fillRect(dir === "right" ? 23 : 22, 14, 3, 3);
+      g.fillStyle(0x111111).fillRect(dir === "left" ? 15 : 16, 15, 2, 2).fillRect(dir === "right" ? 24 : 23, 15, 2, 2);
+    }
     g.fillStyle(0xc9767a).fillRect(18, 20, 4, 2);
     g.fillStyle(0xff8ca0, 0.55).fillRect(13, 18, 3, 2).fillRect(24, 18, 3, 2);
-    g.fillStyle(0x353548).fillRect(11, 54, 7, 12).fillRect(22, 54, 7, 12);
-    g.fillStyle(0x222232).fillRect(10, 64, 8, 4).fillRect(23, 64, 8, 4);
+    g.fillStyle(0x353548).fillRect(11 + Math.max(0, step), 54, 7, 12).fillRect(22 + Math.min(0, step), 54, 7, 12);
+    g.fillStyle(0x222232).fillRect(10 + Math.max(0, step), 64, 8, 4).fillRect(23 + Math.min(0, step), 64, 8, 4);
     g.generateTexture(key, 40, 72);
     g.destroy();
   }
@@ -448,6 +471,12 @@ class GameScene extends Phaser.Scene {
     this.progress = this.defaultProgress();
     this.playStartedAt = Date.now();
     this.nextAutosaveAt = 0;
+    this.playerDir = "down";
+    this.partnerDir = "down";
+    this.walkClock = 0;
+    this.customizing = "Laiba";
+    this.customization = structuredClone(DEFAULT_CUSTOM);
+    this.settings = this.loadSettings();
   }
 
   create() {
@@ -462,6 +491,7 @@ class GameScene extends Phaser.Scene {
       this.mode = "title";
       this.saved = saved;
       this.progress = { ...this.defaultProgress(), ...(saved.progress || {}) };
+      this.customization = { ...structuredClone(DEFAULT_CUSTOM), ...(saved.customization || {}) };
       this.playStartedAt = Date.now();
     }
     this.drawTitle();
@@ -490,7 +520,16 @@ class GameScene extends Phaser.Scene {
     if (up) body.setVelocityY(-speed);
     if (down) body.setVelocityY(speed);
     body.velocity.normalize().scale(speed);
-    if (left || right || up || down) this.emitHeart();
+    const moving = left || right || up || down;
+    if (left) this.playerDir = "left";
+    else if (right) this.playerDir = "right";
+    else if (up) this.playerDir = "up";
+    else if (down) this.playerDir = "down";
+    if (moving) {
+      this.walkClock += 1;
+      this.emitHeart();
+    }
+    this.updateActorTexture(this.player, this.playerTextureKey, this.playerDir, moving);
     this.followPartner();
     if (this.sceneKey === "ending" && this.timerText) this.timerText.setText(this.loveTimer());
   }
@@ -514,7 +553,34 @@ class GameScene extends Phaser.Scene {
       this.toggleJournal(false);
       return;
     }
+    if (key === "Escape" && this.mode === "play") {
+      this.save(false);
+      this.drawSettings(true);
+      return;
+    }
+    if (key === "Escape" && ["settings", "customize", "select"].includes(this.mode)) {
+      if (this.mode === "settings" && this.settingsReturnToPlay) this.startRun(this.playerChoice, this.sceneKey, { reset: false });
+      else this.drawTitle();
+      return;
+    }
+    if (key === "o" || key === "O") {
+      if (this.mode === "play") {
+        this.save(false);
+        this.drawSettings(true);
+      } else {
+        this.drawSettings(false);
+      }
+      return;
+    }
+    if ((key === "c" || key === "C") && this.mode !== "play") {
+      this.drawCustomize("Laiba");
+      return;
+    }
     if (key === "Enter" || key === " " || key === "e" || key === "E") {
+      if (this.mode === "settings" && this.settingsReturnToPlay) {
+        this.startRun(this.playerChoice, this.sceneKey, { reset: false });
+        return;
+      }
       if (this.mode === "title") {
         this.drawSelect();
         return;
@@ -536,8 +602,11 @@ class GameScene extends Phaser.Scene {
     this.addText(GAME_W / 2, 240, "5 months together · made for monthly updates", 14, "#ff8cb3");
     this.add.image(GAME_W / 2 - 90, 375, "afshaan").setScale(2);
     this.add.image(GAME_W / 2 + 90, 375, "laiba").setScale(2);
-    this.addText(GAME_W / 2, 500, "ENTER / TAP to start", 18, "#ffd166", true);
-    this.addText(GAME_W / 2, 532, this.saved ? "Saved game found · continue available after character select" : "New game · choose who is playing", 11, "#aaa");
+    this.drawButton(GAME_W / 2 - 292, 485, 174, 42, "New Game", () => this.drawSelect());
+    this.drawButton(GAME_W / 2 - 87, 485, 174, 42, "Customize", () => this.drawCustomize("Laiba"));
+    this.drawButton(GAME_W / 2 + 118, 485, 174, 42, "Settings", () => this.drawSettings());
+    if (this.saved) this.drawButton(GAME_W / 2 - 112, 538, 224, 40, "Continue Save", () => this.startRun(this.saved.playerChoice, this.saved.sceneKey, { reset: false }));
+    this.addText(GAME_W / 2, 604, "ENTER starts · C customize · O settings", 11, "#aaa");
   }
 
   drawSelect() {
@@ -548,17 +617,108 @@ class GameScene extends Phaser.Scene {
     this.drawCard(230, 205, "Afshaan", "Frisco, Texas", "afshaan", "#5bb5f0");
     this.drawCard(530, 205, "Laiba", "Ellicott City, Baltimore", "laiba", "#e8526b");
     if (this.saved) {
-      const btn = this.drawButton(GAME_W / 2 - 115, 535, 230, 44, "Continue saved game");
+      const btn = this.drawButton(GAME_W / 2 - 115, 535, 230, 44, "Continue saved game", () => this.startRun(this.saved.playerChoice, this.saved.sceneKey, { reset: false }));
       btn.setData("action", "continue");
     }
-    this.addText(GAME_W / 2, 595, "Desktop: WASD/Arrows + E · Mobile: D-pad + E", 11, "#aaa");
+    this.addText(GAME_W / 2, 595, "Click a card to customize first · ESC returns", 11, "#aaa");
   }
 
-  startRun(choice, sceneKey = "world") {
+  drawCustomize(name = this.customizing) {
+    this.clearAll();
+    this.mode = "customize";
+    this.customizing = name;
+    this.drawTiledFloor([0x101020, 0x1d1934, 0x2c2444]);
+    this.ensureCustomTextures();
+    const key = name === "Laiba" ? "player_laiba" : "player_afshaan";
+    const colors = this.customization[name];
+    this.addText(GAME_W / 2, 94, "Character Customization", 30, "#ffd6e8", true);
+    this.addText(GAME_W / 2, 124, `Playing as ${name}`, 14, "#f0e6d3");
+    this.add.rectangle(GAME_W / 2, 280, 210, 250, 0x000000, 0.32).setStrokeStyle(3, colors.outfit);
+    this.add.image(GAME_W / 2, 282, key).setScale(3);
+    this.addText(GAME_W / 2, 430, "16-bit grounded walk sprite", 11, "#aaa");
+    this.drawSwatchRow(140, 190, "Skin", "skin", colors.skin);
+    this.drawSwatchRow(140, 285, "Hair", "hair", colors.hair);
+    this.drawSwatchRow(140, 380, "Outfit", "outfit", colors.outfit);
+    this.drawButton(650, 188, 190, 42, name === "Laiba" ? "Edit Afshaan" : "Edit Laiba", () => this.drawCustomize(name === "Laiba" ? "Afshaan" : "Laiba"));
+    this.drawButton(650, 248, 190, 42, `Start as ${name}`, () => this.startRun(name, "world", { reset: true }));
+    this.drawButton(650, 308, 190, 42, "Character Select", () => this.drawSelect());
+    this.drawButton(650, 368, 190, 42, "Settings", () => this.drawSettings());
+    this.drawButton(650, 428, 190, 42, "Back", () => this.drawTitle());
+    this.addText(GAME_W / 2, 584, "Customization is saved with your game. ESC returns.", 11, "#aaa");
+  }
+
+  drawSwatchRow(x, y, label, field, selected) {
+    this.addText(x, y, label, 13, "#f0e6d3", true).setOrigin(0, 0.5);
+    COLOR_OPTIONS[field].forEach((color, i) => {
+      const cx = x + 100 + i * 54;
+      const swatch = this.add.rectangle(cx, y, 36, 36, color, 1).setStrokeStyle(selected === color ? 4 : 2, selected === color ? 0xffd166 : 0xffffff, selected === color ? 1 : 0.35);
+      swatch.setInteractive({ useHandCursor: true }).on("pointerdown", () => {
+        this.customization[this.customizing][field] = color;
+        this.saveSettings();
+        this.drawCustomize(this.customizing);
+      });
+    });
+  }
+
+  drawSettings(returnToPlay = false) {
+    this.clearAll();
+    this.mode = "settings";
+    this.settingsReturnToPlay = returnToPlay;
+    this.dialogue = [];
+    this.dialogueIndex = 0;
+    this.dialogueNext = null;
+    this.journalOpen = false;
+    this.drawBackdrop(0x090814, 0x1a1a32);
+    this.addText(GAME_W / 2, 100, "Settings", 34, "#ffd6e8", true);
+    this.addText(GAME_W / 2, 135, "Game feel, audio, display, and save controls", 13, "#aaa");
+    this.drawSettingsRow(245, 205, "Music", this.settings.music ? "ON" : "OFF", () => {
+      this.settings.music = !this.settings.music;
+      this.musicOn = this.settings.music;
+      this.saveSettings();
+      this.drawSettings(returnToPlay);
+    });
+    this.drawSettingsRow(245, 265, "Volume", `${Math.round(this.settings.volume * 100)}%`, () => {
+      this.settings.volume = this.settings.volume >= 0.8 ? 0.2 : this.settings.volume + 0.2;
+      if (this.audio) this.audio.volume = this.settings.volume;
+      this.saveSettings();
+      this.drawSettings(returnToPlay);
+    });
+    this.drawSettingsRow(245, 325, "Particles", this.settings.particles ? "ON" : "OFF", () => {
+      this.settings.particles = !this.settings.particles;
+      this.saveSettings();
+      this.drawSettings(returnToPlay);
+    });
+    this.drawSettingsRow(245, 385, "Fullscreen", "TOGGLE", () => {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+      else document.exitFullscreen?.();
+    });
+    this.drawSettingsRow(245, 445, "Reset Save", "CLEAR", () => {
+      localStorage.removeItem(SAVE_KEY);
+      this.saved = null;
+      this.progress = this.defaultProgress();
+      this.drawSettings(returnToPlay);
+    }, "#e8526b");
+    if (returnToPlay) {
+      this.drawButton(GAME_W / 2 - 205, 535, 190, 44, "Resume", () => this.startRun(this.playerChoice, this.sceneKey, { reset: false }));
+      this.drawButton(GAME_W / 2 + 15, 535, 190, 44, "Title", () => this.drawTitle());
+    } else {
+      this.drawButton(GAME_W / 2 - 95, 535, 190, 44, "Back", () => this.drawTitle());
+    }
+    this.addText(GAME_W / 2, 594, "Tip: in-game keys are J journal, S save, M music, ESC close menu.", 11, "#aaa");
+  }
+
+  drawSettingsRow(x, y, label, value, onClick, color = "#ffd166") {
+    this.add.rectangle(GAME_W / 2, y, 470, 44, 0x000000, 0.46).setStrokeStyle(2, 0xc9a2d6, 0.45);
+    this.addText(x, y + 4, label, 13, "#f0e6d3", true).setOrigin(0, 0.5);
+    this.drawButton(x + 255, y - 20, 150, 40, value, onClick);
+    this.children.getAll().at(-1)?.list?.[1]?.setColor?.(color);
+  }
+
+  startRun(choice, sceneKey = "world", options = {}) {
     this.playerChoice = choice;
     this.sceneKey = sceneKey;
     this.mode = "play";
-    if (!this.saved || sceneKey === "world") this.progress = this.defaultProgress();
+    if (options.reset) this.progress = this.defaultProgress();
     this.playStartedAt = Date.now();
     this.startMusic();
     this.loadMap(sceneKey);
@@ -575,8 +735,13 @@ class GameScene extends Phaser.Scene {
     this.drawMemoryZones(key);
     this.walls = this.physics.add.staticGroup();
     this.makeWalls();
-    const pKey = this.playerChoice === "Laiba" ? "laiba" : "afshaan";
+    const pKey = this.playerChoice === "Laiba" ? "player_laiba" : "player_afshaan";
     const partnerKey = this.playerChoice === "Laiba" ? "afshaan" : "laiba";
+    this.ensureCustomTextures();
+    this.playerTextureKey = pKey;
+    this.partnerTextureKey = partnerKey;
+    this.playerDir = "down";
+    this.partnerDir = "down";
     this.player = this.physics.add.sprite(data.start[0], data.start[1], pKey).setScale(1.35).setDepth(20);
     this.partner = this.physics.add.sprite(data.partner[0], data.partner[1], partnerKey).setScale(1.2).setDepth(19);
     if (this.saved?.progress?.lastScene === key && this.saved.progress.lastPosition) {
@@ -738,6 +903,51 @@ class GameScene extends Phaser.Scene {
       lastScene: "world",
       lastPosition: null,
     };
+  }
+
+  ensureCustomTextures() {
+    Object.entries(this.customization).forEach(([name, colors]) => {
+      const key = name === "Laiba" ? "player_laiba" : "player_afshaan";
+      ["down", "up", "left", "right"].forEach((dir) => {
+        for (let frame = 0; frame < 3; frame += 1) {
+          const textureKey = `${key}_${dir}_${frame}`;
+          if (this.textures.exists(textureKey)) this.textures.remove(textureKey);
+          this.makeRuntimeCharacterFrame(textureKey, colors.outfit, colors.skin, colors.hair, name, dir, frame);
+        }
+      });
+      if (this.textures.exists(key)) this.textures.remove(key);
+      this.makeRuntimeCharacterFrame(key, colors.outfit, colors.skin, colors.hair, name, "down", 1);
+    });
+  }
+
+  makeRuntimeCharacterFrame(key, outfit, skin, hair, name, dir, frame) {
+    const g = this.add.graphics();
+    const bob = frame === 1 ? -1 : 0;
+    const step = frame === 0 ? -3 : frame === 2 ? 3 : 0;
+    g.fillStyle(0x000000, 0.24).fillEllipse(20, 65, 30, 8);
+    g.fillStyle(outfit).fillRect(9, 24 + bob, 22, 30);
+    g.lineStyle(1, 0x000000, 0.28).strokeRect(9, 24 + bob, 22, 30);
+    g.fillStyle(skin).fillRect(12, 8, 16, 16);
+    g.fillStyle(hair);
+    if (name === "Afshaan") g.fillRect(10, 3, 20, 8).fillRect(10, 9, 4, 10).fillRect(26, 9, 4, 10);
+    else g.fillRect(10, 2, 20, 8).fillRect(9, 8, 5, 20).fillRect(26, 8, 5, 20).fillStyle(0xa97954).fillRect(14, 0, 12, 4);
+    if (dir !== "up") {
+      g.fillStyle(0xffffff).fillRect(dir === "left" ? 14 : 15, 14, 3, 3).fillRect(dir === "right" ? 23 : 22, 14, 3, 3);
+      g.fillStyle(0x111111).fillRect(dir === "left" ? 15 : 16, 15, 2, 2).fillRect(dir === "right" ? 24 : 23, 15, 2, 2);
+    }
+    g.fillStyle(0xc9767a).fillRect(18, 20, 4, 2);
+    g.fillStyle(0xff8ca0, 0.55).fillRect(13, 18, 3, 2).fillRect(24, 18, 3, 2);
+    g.fillStyle(0x353548).fillRect(11 + Math.max(0, step), 54, 7, 12).fillRect(22 + Math.min(0, step), 54, 7, 12);
+    g.fillStyle(0x222232).fillRect(10 + Math.max(0, step), 64, 8, 4).fillRect(23 + Math.min(0, step), 64, 8, 4);
+    g.generateTexture(key, 40, 72);
+    g.destroy();
+  }
+
+  updateActorTexture(sprite, baseKey, dir, moving) {
+    if (!sprite || !baseKey) return;
+    const frame = moving ? Math.floor(this.walkClock / 8) % 3 : 1;
+    const texture = `${baseKey}_${dir}_${frame}`;
+    if (this.textures.exists(texture) && sprite.texture.key !== texture) sprite.setTexture(texture);
   }
 
   currentPlaySeconds() {
@@ -971,18 +1181,18 @@ class GameScene extends Phaser.Scene {
 
   drawCard(x, y, name, home, sprite, color) {
     const card = this.add.rectangle(x + 100, y + 152, 200, 305, 0xffffff, 0.06).setStrokeStyle(3, Phaser.Display.Color.HexStringToColor(color).color);
-    card.setInteractive({ useHandCursor: true }).on("pointerdown", () => this.startRun(name));
+    card.setInteractive({ useHandCursor: true }).on("pointerdown", () => this.drawCustomize(name));
     this.add.image(x + 100, y + 140, sprite).setScale(2.1);
     this.addText(x + 100, y + 235, name, 18, color, true);
     this.addText(x + 100, y + 260, home, 11, "#ddd");
     this.addText(x + 100, y + 284, name === "Laiba" ? "fair skin · pink outfit" : "blue outfit", 10, "#aaa");
   }
 
-  drawButton(x, y, w, h, label) {
+  drawButton(x, y, w, h, label, onClick = null) {
     const c = this.add.container(x, y);
     c.add(this.add.rectangle(w / 2, h / 2, w, h, 0x000000, 0.55).setStrokeStyle(2, 0xffd166));
     c.add(this.addText(w / 2, h / 2 + 4, label, 12, "#ffd166", true));
-    c.setSize(w, h).setInteractive({ useHandCursor: true }).on("pointerdown", () => this.startRun(this.saved.playerChoice, this.saved.sceneKey));
+    c.setSize(w, h).setInteractive({ useHandCursor: true }).on("pointerdown", onClick || (() => this.drawTitle()));
     return c;
   }
 
@@ -1172,6 +1382,7 @@ class GameScene extends Phaser.Scene {
   }
 
   emitHeart() {
+    if (!this.settings.particles) return;
     if (Phaser.Math.Between(0, 100) > 96) {
       const heart = this.add.image(this.player.x + Phaser.Math.Between(-12, 12), this.player.y - 28, "heart").setScale(0.35).setDepth(12);
       this.tweens.add({ targets: heart, y: heart.y - 38, alpha: 0, duration: 900, onComplete: () => heart.destroy() });
@@ -1180,14 +1391,22 @@ class GameScene extends Phaser.Scene {
 
   followPartner() {
     const dist = Phaser.Math.Distance.Between(this.partner.x, this.partner.y, this.player.x, this.player.y);
-    if (dist > 80) this.physics.moveToObject(this.partner, this.player, 112);
-    else this.partner.body.setVelocity(0);
+    if (dist > 80) {
+      this.physics.moveToObject(this.partner, this.player, 112);
+      const dx = this.player.x - this.partner.x;
+      const dy = this.player.y - this.partner.y;
+      this.partnerDir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up");
+      this.updateActorTexture(this.partner, this.partnerTextureKey, this.partnerDir, true);
+    } else {
+      this.partner.body.setVelocity(0);
+      this.updateActorTexture(this.partner, this.partnerTextureKey, this.partnerDir, false);
+    }
   }
 
   startMusic() {
-    if (!this.musicOn || this.audio) return;
+    if (!this.musicOn || !this.settings.music || this.audio) return;
     this.audio = new Audio(SONGS[this.songIndex][0]);
-    this.audio.volume = 0.18;
+    this.audio.volume = this.settings.volume;
     this.audio.crossOrigin = "anonymous";
     this.audio.onended = () => {
       this.audio = null;
@@ -1231,7 +1450,7 @@ class GameScene extends Phaser.Scene {
     };
     this.progress = progress;
     this.playStartedAt = now;
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ playerChoice: this.playerChoice, sceneKey: this.sceneKey, progress }));
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ playerChoice: this.playerChoice, sceneKey: this.sceneKey, progress, customization: this.customization, settings: this.settings }));
     if (showToast) this.flashText("Game saved");
   }
 
@@ -1243,9 +1462,42 @@ class GameScene extends Phaser.Scene {
     }
   }
 
+  defaultSettings() {
+    return { music: true, volume: 0.18, particles: true };
+  }
+
+  loadSettings() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+      if (parsed?.customization) this.customization = { ...structuredClone(DEFAULT_CUSTOM), ...parsed.customization };
+      return { ...this.defaultSettings(), ...(parsed?.settings || parsed || {}) };
+    } catch {
+      return this.defaultSettings();
+    }
+  }
+
+  saveSettings() {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ settings: this.settings, customization: this.customization }));
+  }
+
   handlePointer(pointer) {
+    if (this.mode === "settings") {
+      if (this.settingsReturnToPlay && Phaser.Geom.Rectangle.Contains(new Phaser.Geom.Rectangle(GAME_W / 2 - 205, 535, 190, 44), pointer.x, pointer.y)) {
+        this.startRun(this.playerChoice, this.sceneKey, { reset: false });
+        return;
+      }
+      if (this.settingsReturnToPlay && Phaser.Geom.Rectangle.Contains(new Phaser.Geom.Rectangle(GAME_W / 2 + 15, 535, 190, 44), pointer.x, pointer.y)) {
+        this.drawTitle();
+        return;
+      }
+      if (!this.settingsReturnToPlay && Phaser.Geom.Rectangle.Contains(new Phaser.Geom.Rectangle(GAME_W / 2 - 95, 535, 190, 44), pointer.x, pointer.y)) {
+        this.drawTitle();
+        return;
+      }
+      return;
+    }
     if (this.mode === "title") {
-      this.drawSelect();
+      if (pointer.y < 450) this.drawSelect();
       return;
     }
     if (this.dialogue.length) {
