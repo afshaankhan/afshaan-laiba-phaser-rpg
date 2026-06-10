@@ -33,5 +33,15 @@ A full static Phaser RPG version of the five-month anniversary game.
 - Settings and customization persistence with `localStorage`
 - Mobile-friendly controls
 - Final anniversary garden with a live timer since January 9, 2026 at 4:00 PM
+- Gentle Forest 16-bit forest/map art integrated into the overworld and memory scenes
 
 This is a static browser game with no build step.
+
+## Asset Credits
+
+Forest tiles/map art: **Free Pixel Art Tileset - Gentle Forest** by Seliel the Shaper.
+
+- Source: https://seliel-the-shaper.itch.io/gentle-forest
+- License: https://selieltheshaper.weebly.com/user-license.html
+
+The assets are used inside this one game project. Do not redistribute the raw asset files as a standalone asset pack.

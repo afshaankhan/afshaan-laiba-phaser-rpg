@@ -402,6 +402,17 @@ class BootScene extends Phaser.Scene {
     super("Boot");
   }
 
+  preload() {
+    const base = "assets/vendor/gentle-forest/";
+    this.load.image("gf_cover", `${base}gentle-forest-cover.png`);
+    this.load.image("gf_sheet", `${base}gentle-forest-sheet.png`);
+    this.load.image("gf_supertile", `${base}gentle-forest-supertile.png`);
+    this.load.image("gf_palettes", `${base}gentle-forest-palettes-free.png`);
+    this.load.image("gf_sample", `${base}gentle-forest-sample-map.png`);
+    this.load.image("gf_waterfall", `${base}gentle-forest-waterfall.gif`);
+    this.load.image("gf_scene", `${base}gentle-forest-character-scene.gif`);
+  }
+
   create() {
     this.makeSprites();
     this.scene.start("Game");
@@ -730,6 +741,7 @@ class GameScene extends Phaser.Scene {
     this.sceneKey = key;
     const data = SCENES[key];
     this.drawTiledFloor(data.palette);
+    this.drawGentleForestBackdrop(key);
     this.drawProps(data.props);
     this.drawZones(data.zones);
     this.drawMemoryZones(key);
@@ -1127,6 +1139,35 @@ class GameScene extends Phaser.Scene {
       }
     }
   }
+  drawGentleForestBackdrop(sceneKey) {
+    const artByScene = {
+      world: ["gf_sample", 0.92],
+      hinge: ["gf_sheet", 0.18],
+      chat: ["gf_supertile", 0.23],
+      distance: ["gf_waterfall", 0.72],
+      facetime: ["gf_palettes", 0.28],
+      movies: ["gf_cover", 0.18],
+      games: ["gf_scene", 0.24],
+      spotify: ["gf_palettes", 0.22],
+      sleep: ["gf_supertile", 0.16],
+      morning: ["gf_cover", 0.36],
+      ending: ["gf_sample", 0.62],
+    };
+    const entry = artByScene[sceneKey];
+    if (!entry) return;
+    const [key, alpha] = entry;
+    if (!this.textures.exists(key)) return;
+    const img = this.add.image(GAME_W / 2, GAME_H / 2, key).setDepth(0.6).setAlpha(alpha);
+    const tex = this.textures.get(key).getSourceImage();
+    const scale = Math.max(GAME_W / tex.width, GAME_H / tex.height);
+    img.setScale(scale);
+    this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x050510, sceneKey === "world" ? 0.08 : 0.38).setDepth(0.7);
+    if (sceneKey === "world") {
+      this.add.rectangle(GAME_W / 2, 40, GAME_W, 80, 0x071018, 0.5).setDepth(0.8);
+      this.addText(GAME_W - 18, GAME_H - 38, "Forest maps by Seliel the Shaper", 9, "#d7f7d1").setOrigin(1, 0.5).setDepth(2);
+    }
+  }
+
 
   drawProps(props) {
     for (const [kind, x, y, label] of props) {
@@ -1481,16 +1522,17 @@ class GameScene extends Phaser.Scene {
   }
 
   handlePointer(pointer) {
+    const hit = (x, y, w, h) => Phaser.Geom.Rectangle.Contains(new Phaser.Geom.Rectangle(x, y, w, h), pointer.x, pointer.y);
     if (this.mode === "settings") {
-      if (this.settingsReturnToPlay && Phaser.Geom.Rectangle.Contains(new Phaser.Geom.Rectangle(GAME_W / 2 - 205, 535, 190, 44), pointer.x, pointer.y)) {
+      if (this.settingsReturnToPlay && hit(GAME_W / 2 - 205, 535, 190, 44)) {
         this.startRun(this.playerChoice, this.sceneKey, { reset: false });
         return;
       }
-      if (this.settingsReturnToPlay && Phaser.Geom.Rectangle.Contains(new Phaser.Geom.Rectangle(GAME_W / 2 + 15, 535, 190, 44), pointer.x, pointer.y)) {
+      if (this.settingsReturnToPlay && hit(GAME_W / 2 + 15, 535, 190, 44)) {
         this.drawTitle();
         return;
       }
-      if (!this.settingsReturnToPlay && Phaser.Geom.Rectangle.Contains(new Phaser.Geom.Rectangle(GAME_W / 2 - 95, 535, 190, 44), pointer.x, pointer.y)) {
+      if (!this.settingsReturnToPlay && hit(GAME_W / 2 - 95, 535, 190, 44)) {
         this.drawTitle();
         return;
       }
@@ -1498,6 +1540,44 @@ class GameScene extends Phaser.Scene {
     }
     if (this.mode === "title") {
       if (pointer.y < 450) this.drawSelect();
+      return;
+    }
+    if (this.mode === "select") {
+      if (hit(230, 205, 200, 305)) {
+        this.drawCustomize("Afshaan");
+        return;
+      }
+      if (hit(530, 205, 200, 305)) {
+        this.drawCustomize("Laiba");
+        return;
+      }
+      if (this.saved && hit(GAME_W / 2 - 115, 535, 230, 44)) {
+        this.startRun(this.saved.playerChoice, this.saved.sceneKey, { reset: false });
+        return;
+      }
+      return;
+    }
+    if (this.mode === "customize") {
+      if (hit(650, 188, 190, 42)) {
+        this.drawCustomize(this.customizing === "Laiba" ? "Afshaan" : "Laiba");
+        return;
+      }
+      if (hit(650, 248, 190, 42)) {
+        this.startRun(this.customizing, "world", { reset: true });
+        return;
+      }
+      if (hit(650, 308, 190, 42)) {
+        this.drawSelect();
+        return;
+      }
+      if (hit(650, 368, 190, 42)) {
+        this.drawSettings();
+        return;
+      }
+      if (hit(650, 428, 190, 42)) {
+        this.drawTitle();
+        return;
+      }
       return;
     }
     if (this.dialogue.length) {
