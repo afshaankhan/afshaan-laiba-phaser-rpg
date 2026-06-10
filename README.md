@@ -34,14 +34,19 @@ A full static Phaser RPG version of the five-month anniversary game.
 - Mobile-friendly controls
 - Final anniversary garden with a live timer since January 9, 2026 at 4:00 PM
 - Gentle Forest 16-bit forest/map art integrated into the overworld and memory scenes
+- Real Mana Seed Character Base spritesheets for Afshaan and Laiba walking animation
+- Free cat companion/object art in Together World
 
 This is a static browser game with no build step.
 
 ## Asset Credits
 
 Forest tiles/map art: **Free Pixel Art Tileset - Gentle Forest** by Seliel the Shaper.
+Character sprites: **Free Mana Seed Character Base Demo** by Seliel the Shaper.
+Cat art: **RetroCatsFree** asset supplied by the user.
 
 - Source: https://seliel-the-shaper.itch.io/gentle-forest
+- Character source: https://seliel-the-shaper.itch.io/character-base
 - License: https://selieltheshaper.weebly.com/user-license.html
 
 The assets are used inside this one game project. Do not redistribute the raw asset files as a standalone asset pack.

@@ -411,6 +411,16 @@ class BootScene extends Phaser.Scene {
     this.load.image("gf_sample", `${base}gentle-forest-sample-map.png`);
     this.load.image("gf_waterfall", `${base}gentle-forest-waterfall.gif`);
     this.load.image("gf_scene", `${base}gentle-forest-character-scene.gif`);
+    this.load.image("gf_full_sample", `${base}full/gentle-sample-map-actual.png`);
+    this.load.image("gf_full_v01", `${base}full/gentle-forest-v01.png`);
+    this.load.image("gf_full_v02", `${base}full/gentle-forest-v02.png`);
+    this.load.image("gf_full_v03", `${base}full/gentle-forest-v03.png`);
+    this.load.image("gf_full_tree_wall", `${base}full/gentle-tree-wall.png`);
+    this.load.image("gf_full_waterfall", `${base}full/gentle-waterfall-v01.png`);
+    this.load.image("gf_full_sparkles", `${base}full/gentle-water-sparkles-v01.png`);
+    this.load.spritesheet("ms_afshaan", "assets/vendor/mana-seed-character/afshaan-sheet.png", { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet("ms_laiba", "assets/vendor/mana-seed-character/laiba-sheet.png", { frameWidth: 64, frameHeight: 64 });
+    this.load.image("retro_cats", "assets/vendor/retro-cats/retro-cats-free.png");
   }
 
   create() {
@@ -611,8 +621,8 @@ class GameScene extends Phaser.Scene {
     this.addText(GAME_W / 2, 150, "Afshaan ♡ Laiba", 46, "#ffd6e8", true);
     this.addText(GAME_W / 2, 205, "A Complete Browser RPG", 20, "#f0e6d3");
     this.addText(GAME_W / 2, 240, "5 months together · made for monthly updates", 14, "#ff8cb3");
-    this.add.image(GAME_W / 2 - 90, 375, "afshaan").setScale(2);
-    this.add.image(GAME_W / 2 + 90, 375, "laiba").setScale(2);
+    this.add.image(GAME_W / 2 - 90, 375, "ms_afshaan", this.assetFrame("down", false)).setScale(2.2);
+    this.add.image(GAME_W / 2 + 90, 375, "ms_laiba", this.assetFrame("down", false)).setScale(2.2);
     this.drawButton(GAME_W / 2 - 292, 485, 174, 42, "New Game", () => this.drawSelect());
     this.drawButton(GAME_W / 2 - 87, 485, 174, 42, "Customize", () => this.drawCustomize("Laiba"));
     this.drawButton(GAME_W / 2 + 118, 485, 174, 42, "Settings", () => this.drawSettings());
@@ -640,13 +650,13 @@ class GameScene extends Phaser.Scene {
     this.customizing = name;
     this.drawTiledFloor([0x101020, 0x1d1934, 0x2c2444]);
     this.ensureCustomTextures();
-    const key = name === "Laiba" ? "player_laiba" : "player_afshaan";
+    const key = name === "Laiba" ? "ms_laiba" : "ms_afshaan";
     const colors = this.customization[name];
     this.addText(GAME_W / 2, 94, "Character Customization", 30, "#ffd6e8", true);
     this.addText(GAME_W / 2, 124, `Playing as ${name}`, 14, "#f0e6d3");
     this.add.rectangle(GAME_W / 2, 280, 210, 250, 0x000000, 0.32).setStrokeStyle(3, colors.outfit);
-    this.add.image(GAME_W / 2, 282, key).setScale(3);
-    this.addText(GAME_W / 2, 430, "16-bit grounded walk sprite", 11, "#aaa");
+    this.add.image(GAME_W / 2, 282, key, this.assetFrame("down", false)).setScale(3);
+    this.addText(GAME_W / 2, 430, "Mana Seed 64x64 layered walk sprite", 11, "#aaa");
     this.drawSwatchRow(140, 190, "Skin", "skin", colors.skin);
     this.drawSwatchRow(140, 285, "Hair", "hair", colors.hair);
     this.drawSwatchRow(140, 380, "Outfit", "outfit", colors.outfit);
@@ -747,20 +757,20 @@ class GameScene extends Phaser.Scene {
     this.drawMemoryZones(key);
     this.walls = this.physics.add.staticGroup();
     this.makeWalls();
-    const pKey = this.playerChoice === "Laiba" ? "player_laiba" : "player_afshaan";
-    const partnerKey = this.playerChoice === "Laiba" ? "afshaan" : "laiba";
+    const pKey = this.playerChoice === "Laiba" ? "ms_laiba" : "ms_afshaan";
+    const partnerKey = this.playerChoice === "Laiba" ? "ms_afshaan" : "ms_laiba";
     this.ensureCustomTextures();
     this.playerTextureKey = pKey;
     this.partnerTextureKey = partnerKey;
     this.playerDir = "down";
     this.partnerDir = "down";
-    this.player = this.physics.add.sprite(data.start[0], data.start[1], pKey).setScale(1.35).setDepth(20);
-    this.partner = this.physics.add.sprite(data.partner[0], data.partner[1], partnerKey).setScale(1.2).setDepth(19);
+    this.player = this.physics.add.sprite(data.start[0], data.start[1], pKey, this.assetFrame("down", false)).setScale(1.18).setDepth(20);
+    this.partner = this.physics.add.sprite(data.partner[0], data.partner[1], partnerKey, this.assetFrame("down", false)).setScale(1.08).setDepth(19);
     if (this.saved?.progress?.lastScene === key && this.saved.progress.lastPosition) {
       this.player.setPosition(this.saved.progress.lastPosition.x, this.saved.progress.lastPosition.y);
     }
-    this.player.body.setSize(24, 28).setOffset(8, 38);
-    this.partner.body.setSize(24, 28).setOffset(8, 38);
+    this.player.body.setSize(26, 24).setOffset(19, 38);
+    this.partner.body.setSize(26, 24).setOffset(19, 38);
     this.physics.add.collider(this.player, this.walls);
     this.drawHud();
     this.save();
@@ -955,8 +965,19 @@ class GameScene extends Phaser.Scene {
     g.destroy();
   }
 
+  assetFrame(dir, moving) {
+    const dirs = { down: 0, left: 1, right: 2, up: 3 };
+    const dirIndex = dirs[dir] ?? 0;
+    if (!moving) return dirIndex * 8;
+    return (dirIndex + 4) * 8 + (Math.floor(this.walkClock / 8) % 6);
+  }
+
   updateActorTexture(sprite, baseKey, dir, moving) {
     if (!sprite || !baseKey) return;
+    if (baseKey.startsWith("ms_")) {
+      sprite.setTexture(baseKey, this.assetFrame(dir, moving));
+      return;
+    }
     const frame = moving ? Math.floor(this.walkClock / 8) % 3 : 1;
     const texture = `${baseKey}_${dir}_${frame}`;
     if (this.textures.exists(texture) && sprite.texture.key !== texture) sprite.setTexture(texture);
@@ -1141,17 +1162,17 @@ class GameScene extends Phaser.Scene {
   }
   drawGentleForestBackdrop(sceneKey) {
     const artByScene = {
-      world: ["gf_sample", 0.92],
-      hinge: ["gf_sheet", 0.18],
-      chat: ["gf_supertile", 0.23],
-      distance: ["gf_waterfall", 0.72],
-      facetime: ["gf_palettes", 0.28],
+      world: ["gf_full_sample", 0.92],
+      hinge: ["gf_full_v01", 0.26],
+      chat: ["gf_full_v02", 0.26],
+      distance: ["gf_full_waterfall", 0.82],
+      facetime: ["gf_full_v02", 0.28],
       movies: ["gf_cover", 0.18],
       games: ["gf_scene", 0.24],
-      spotify: ["gf_palettes", 0.22],
-      sleep: ["gf_supertile", 0.16],
+      spotify: ["gf_full_v03", 0.25],
+      sleep: ["gf_full_tree_wall", 0.18],
       morning: ["gf_cover", 0.36],
-      ending: ["gf_sample", 0.62],
+      ending: ["gf_full_sample", 0.62],
     };
     const entry = artByScene[sceneKey];
     if (!entry) return;
@@ -1164,7 +1185,9 @@ class GameScene extends Phaser.Scene {
     this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x050510, sceneKey === "world" ? 0.08 : 0.38).setDepth(0.7);
     if (sceneKey === "world") {
       this.add.rectangle(GAME_W / 2, 40, GAME_W, 80, 0x071018, 0.5).setDepth(0.8);
-      this.addText(GAME_W - 18, GAME_H - 38, "Forest maps by Seliel the Shaper", 9, "#d7f7d1").setOrigin(1, 0.5).setDepth(2);
+      this.add.image(92, 516, "retro_cats").setScale(0.22).setCrop(0, 0, 256, 110).setDepth(3);
+      this.addText(92, 583, "free pixel cats", 9, "#f0e6d3").setDepth(4);
+      this.addText(GAME_W - 18, GAME_H - 38, "Forest + characters by Seliel the Shaper", 9, "#d7f7d1").setOrigin(1, 0.5).setDepth(2);
     }
   }
 
@@ -1223,10 +1246,11 @@ class GameScene extends Phaser.Scene {
   drawCard(x, y, name, home, sprite, color) {
     const card = this.add.rectangle(x + 100, y + 152, 200, 305, 0xffffff, 0.06).setStrokeStyle(3, Phaser.Display.Color.HexStringToColor(color).color);
     card.setInteractive({ useHandCursor: true }).on("pointerdown", () => this.drawCustomize(name));
-    this.add.image(x + 100, y + 140, sprite).setScale(2.1);
+    const sheet = name === "Laiba" ? "ms_laiba" : "ms_afshaan";
+    this.add.image(x + 100, y + 140, sheet, this.assetFrame("down", false)).setScale(2.1);
     this.addText(x + 100, y + 235, name, 18, color, true);
     this.addText(x + 100, y + 260, home, 11, "#ddd");
-    this.addText(x + 100, y + 284, name === "Laiba" ? "fair skin · pink outfit" : "blue outfit", 10, "#aaa");
+    this.addText(x + 100, y + 284, name === "Laiba" ? "Mana Seed layered sprite" : "Mana Seed layered sprite", 10, "#aaa");
   }
 
   drawButton(x, y, w, h, label, onClick = null) {
