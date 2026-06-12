@@ -1,8 +1,8 @@
 # Afshaan & Laiba: Dragonbound
 
-A static browser fantasy-romance adventure game built from Afshaan and Laiba's real relationship lore.
+A browser-based fantasy romance RPG built from Afshaan and Laiba's real relationship lore.
 
-This version no longer uses Phaser. It is a custom vanilla JavaScript + Three.js/WebGL game with DOM menus, save data, settings, fantasy realms, relic progression, and grounded characters.
+This version is rebuilt as a proper top-down RPG using Phaser 3 Arcade Physics, real 16-bit tilesheets, animated Mana Seed character sprites, collision, collectibles, portals, NPC dialogue, save data, and chapter progression.
 
 ## Play
 
@@ -22,31 +22,31 @@ This version no longer uses Phaser. It is a custom vanilla JavaScript + Three.js
 
 ## Controls
 
+- Start new game: Enter / Space from title
+- Choose character: C from title, then A for Afshaan or L for Laiba
 - Move: Arrow keys / WASD
 - Interact / continue: E, Enter, or Space
+- Love Log / journal: J
+- Save: S
 - Music toggle: M
 - Return to title: Esc
-- Mobile: on-screen D-pad and action/menu buttons
-- Click/tap glowing objects to walk toward them and interact
+- Mobile: on-screen D-pad and action buttons
+- Click/tap the map to walk toward a point
 
 ## Game Features
 
-- Custom Three.js/WebGL fantasy adventure engine
-- Full title menu
-- Settings menu
-- Character customization for Afshaan and Laiba
-- Autosave and resume with `localStorage`
-- Partner character follows as the other person
-- Grounded 3D character movement with leg animation and shadows
-- Richer animated realms with lanterns, trees, moons, floating islands, portals, labels, and sparkle plants
-- Collectible memory shards in every realm
-- Relic gates: collect at least 3 shards before a relic wakes, then use the relic to unlock the next realm
-- Fantasy realms based on the lore bible
-- Ammara dragon scenes
-- Pika companion scenes
-- Mufliya guide scenes
-- Relic collection progression across 11 chapters
-- Dialogue-driven romance/adventure story
+- Phaser 3 top-down RPG engine
+- Arcade physics movement and collision
+- Real tile-based forest maps from Gentle Forest
+- Mana Seed animated character sheets for Afshaan and Laiba
+- Partner character follows the player
+- 11 lore realms from the Dragonbound story bible
+- Collectible memory sparks in each realm
+- Relic gates: collect at least 3 sparks before the relic wakes
+- Portals unlock only after the realm relic is collected
+- NPC dialogue with Pika, Mufliya, Ammara, and echoes
+- Autosave and resume with localStorage
+- Music preview toggle
 - Final Month Six timer: “since together” from January 9, 2026 at 4:00 PM
 
 ## Current Realms
@@ -67,16 +67,16 @@ This version no longer uses Phaser. It is a custom vanilla JavaScript + Three.js
 
 The full story bible is in `docs/dragonbound-story-script.md`.
 
-The game is static and can run on GitHub Pages without a build step.
+The game is static and runs on GitHub Pages without a build step.
 
 ## Asset Credits
 
-Forest tiles/map art: **Free Pixel Art Tileset - Gentle Forest** by Seliel the Shaper.
-Character sprites: **Free Mana Seed Character Base Demo** by Seliel the Shaper.
+Forest tiles/map art: **Free Pixel Art Tileset - Gentle Forest** by Seliel the Shaper.  
+Character sprites: **Free Mana Seed Character Base Demo** by Seliel the Shaper.  
 Cat art: **RetroCatsFree** asset supplied by the user.
 
-- Source: https://seliel-the-shaper.itch.io/gentle-forest
+- Gentle Forest source: https://seliel-the-shaper.itch.io/gentle-forest
 - Character source: https://seliel-the-shaper.itch.io/character-base
 - License: https://selieltheshaper.weebly.com/user-license.html
 
-The uploaded assets remain credited for future use and reference. The current runtime uses custom original WebGL geometry and generated fantasy scenes instead of Phaser tilemaps.
+Assets are used inside this game project with credit. Do not redistribute the raw asset packs separately.
