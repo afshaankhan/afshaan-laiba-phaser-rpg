@@ -27,7 +27,7 @@ This version no longer uses Phaser. It is a custom vanilla JavaScript + Three.js
 - Music toggle: M
 - Return to title: Esc
 - Mobile: on-screen D-pad and action/menu buttons
-- Click/tap glowing objects to interact
+- Click/tap glowing objects to walk toward them and interact
 
 ## Game Features
 
@@ -38,6 +38,9 @@ This version no longer uses Phaser. It is a custom vanilla JavaScript + Three.js
 - Autosave and resume with `localStorage`
 - Partner character follows as the other person
 - Grounded 3D character movement with leg animation and shadows
+- Richer animated realms with lanterns, trees, moons, floating islands, portals, labels, and sparkle plants
+- Collectible memory shards in every realm
+- Relic gates: collect at least 3 shards before a relic wakes, then use the relic to unlock the next realm
 - Fantasy realms based on the lore bible
 - Ammara dragon scenes
 - Pika companion scenes

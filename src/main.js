@@ -212,16 +212,19 @@ let activeChapter = chapters[save.chapterIndex] || chapters[0];
 let keys = new Set();
 let velocity = new THREE.Vector3();
 let interactTarget = null;
+let moveTarget = null;
 let dialogueQueue = [];
 let dialogueOpen = false;
 let musicIndex = 0;
 let audio = null;
 let lastSave = 0;
+let promptEl;
 
 const shell = document.getElementById("game-shell");
 shell.innerHTML = `
   <canvas id="world"></canvas>
   <section id="overlay" class="overlay"></section>
+  <section id="prompt" class="prompt hidden"></section>
   <section id="dialogue" class="dialogue hidden"><h3></h3><p></p><button>Continue</button></section>
   <section id="hud" class="hud hidden"><div><strong id="place"></strong><span id="quest"></span></div><div id="relics"></div></section>
   <section id="mobile" class="mobile"><div class="pad"><button data-m="up">▲</button><button data-m="left">◀</button><button data-m="down">▼</button><button data-m="right">▶</button></div><div class="act"><button data-action="interact">E</button><button data-action="menu">☰</button></div></section>
@@ -229,6 +232,7 @@ shell.innerHTML = `
 
 const canvas = document.getElementById("world");
 const overlay = document.getElementById("overlay");
+promptEl = document.getElementById("prompt");
 const dialogueEl = document.getElementById("dialogue");
 const hud = document.getElementById("hud");
 const placeEl = document.getElementById("place");
@@ -264,15 +268,25 @@ scene.add(pika);
 const mufliya = makeMufliya();
 scene.add(mufliya);
 const objects = [];
+const animatables = [];
 
 function newSave() {
-  return { chapterIndex: 0, relics: [], visited: {}, custom: structuredClone(defaultCustom), playSeconds: 0, pos: { x: 0, z: 6 } };
+  return {
+    chapterIndex: 0,
+    relics: [],
+    shards: {},
+    visited: {},
+    custom: structuredClone(defaultCustom),
+    playSeconds: 0,
+    pos: { x: 0, z: 6 }
+  };
 }
 function normalizeSave(raw) {
   const fresh = newSave();
   const merged = { ...fresh, ...(raw || {}) };
   merged.chapterIndex = Number.isFinite(merged.chapterIndex) ? merged.chapterIndex : 0;
   merged.relics = Array.isArray(merged.relics) ? merged.relics : [];
+  merged.shards = merged.shards && typeof merged.shards === "object" ? merged.shards : {};
   merged.visited = merged.visited && typeof merged.visited === "object" ? merged.visited : {};
   merged.playSeconds = Number.isFinite(merged.playSeconds) ? merged.playSeconds : 0;
   merged.pos = merged.pos && Number.isFinite(merged.pos.x) && Number.isFinite(merged.pos.z) ? merged.pos : fresh.pos;
@@ -293,7 +307,14 @@ function makeHero(kind, outfit, skin, aura) {
   const g = new THREE.Group();
   const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.45, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22 }));
   shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.02; g.add(shadow);
+  const cape = box(0.58, 0.82, 0.08, kind === "player" ? 0x20345d : 0x6e2f55);
+  cape.position.set(0, 0.77, 0.2);
+  g.add(cape);
   const body = box(0.48, 0.78, 0.34, outfit); body.position.y = 0.78; g.add(body);
+  const chest = box(0.34, 0.18, 0.37, 0xffffff);
+  chest.position.set(0, 0.92, -0.01);
+  chest.material.color.offsetHSL(0, 0, -0.08);
+  g.add(chest);
   const head = orb(0.28, skin); head.position.y = 1.36; g.add(head);
   const hair = new THREE.Group();
   const hairTop = box(0.62, 0.18, 0.46, kind === "player" ? 0x19172a : 0x8b5e3c); hairTop.position.y = 1.58; hair.add(hairTop);
@@ -302,8 +323,13 @@ function makeHero(kind, outfit, skin, aura) {
   g.add(hair);
   const legL = box(0.16, 0.52, 0.18, 0x263044); legL.position.set(-0.14, 0.22, 0); g.add(legL);
   const legR = legL.clone(); legR.position.x = 0.14; g.add(legR);
+  const armL = box(0.13, 0.55, 0.14, skin); armL.position.set(-0.34, 0.78, -0.02); g.add(armL);
+  const armR = armL.clone(); armR.position.x = 0.34; g.add(armR);
+  const phone = orb(0.08, kind === "player" ? 0x89d8ff : 0xffd6e8, kind === "player" ? 0x89d8ff : 0xffd6e8);
+  phone.position.set(0.44, 0.72, -0.18);
+  g.add(phone);
   const glow = new THREE.PointLight(color(aura), 0.8, 3.5); glow.position.y = 1.15; g.add(glow);
-  return { group: g, body, head, hair, legL, legR, speed: 5.4, walk: 0, glow };
+  return { group: g, body, head, hair, legL, legR, armL, armR, phone, cape, speed: 5.4, walk: 0, glow };
 }
 function setHeroStyle() {
   const p = custom[custom.player];
@@ -341,10 +367,14 @@ function makeMufliya() {
 }
 
 function clearWorld() { while (world.children.length) world.remove(world.children[0]); objects.length = 0; }
+function clearAnimatables() { animatables.length = 0; }
 function loadChapter(index, resetPos = true) {
   save.chapterIndex = Math.max(0, Math.min(index, chapters.length - 1));
   activeChapter = chapters[save.chapterIndex];
   clearWorld();
+  clearAnimatables();
+  moveTarget = null;
+  promptEl.classList.add("hidden");
   scene.background = color(activeChapter.palette[0]);
   scene.fog.color.set(activeChapter.palette[0]);
   buildTerrain(activeChapter);
@@ -359,44 +389,216 @@ function loadChapter(index, resetPos = true) {
 function tile(x, z, c, y = -0.05, h = 0.08) { const m = box(1, h, 1, c); m.position.set(x, y, z); world.add(m); return m; }
 function buildTerrain(ch) {
   const [base, accent, warm] = ch.palette;
-  for (let x = -12; x <= 12; x++) for (let z = -9; z <= 9; z++) tile(x, z, (x + z) % 3 === 0 ? base + 0x050505 : base + 0x101010);
+  world.add(makeSkyRelics(ch));
+  const ground = new THREE.Group();
+  for (let x = -14; x <= 14; x++) {
+    for (let z = -10; z <= 10; z++) {
+      const edge = Math.abs(x) > 12 || Math.abs(z) > 8;
+      const checker = (x + z) % 3 === 0;
+      const colorValue = edge ? base + 0x030306 : checker ? base + 0x08080a : base + 0x131018;
+      const t = tile(x, z, colorValue, edge ? -0.12 : -0.05, edge ? 0.18 : 0.08);
+      ground.add(t);
+    }
+  }
+  world.add(ground);
   for (let z = -8; z <= 7; z++) tile(0, z, accent, 0, 0.1);
   for (let x = -8; x <= 8; x++) tile(x, 0, accent, 0, 0.1);
-  if (["skybridge", "sleepsea", "jam"].includes(ch.id)) {
-    for (let x = -12; x <= 12; x++) for (let z of [-8, -7, 7, 8]) tile(x, z, 0x0e4164, -0.03, 0.06);
+  for (let i = -5; i <= 5; i += 2) {
+    const lamp = makeLantern(-9.5, i, warm);
+    world.add(lamp);
+    const lamp2 = makeLantern(9.5, i, warm);
+    world.add(lamp2);
   }
-  for (let i = 0; i < 34; i++) {
-    const x = -11 + Math.random() * 22, z = -8 + Math.random() * 16;
-    if (Math.abs(x) < 1.1 || Math.abs(z) < 1.1) continue;
-    const p = cyl(0.05 + Math.random() * 0.04, 0.35, warm, 7); p.position.set(x, 0.18, z); world.add(p);
+  if (["skybridge", "sleepsea", "jam"].includes(ch.id)) {
+    const water = new THREE.Mesh(new THREE.PlaneGeometry(31, 23, 1, 1), new THREE.MeshStandardMaterial({ color: 0x0a3d68, emissive: 0x082244, emissiveIntensity: 0.3, roughness: 0.35, transparent: true, opacity: 0.82 }));
+    water.rotation.x = -Math.PI / 2;
+    water.position.y = -0.16;
+    world.add(water);
+    animatables.push({ mesh: water, kind: "water" });
+  }
+  const treeCount = ["garden", "messages", "ramadan"].includes(ch.id) ? 32 : 18;
+  for (let i = 0; i < treeCount; i++) {
+    const side = i % 2 ? -1 : 1;
+    const x = side * (7 + Math.random() * 5.5);
+    const z = -8 + Math.random() * 16;
+    world.add(makeTree(x, z, i % 3 ? 0x2f7d55 : 0x4a936f));
+  }
+  for (let i = 0; i < 26; i++) {
+    const x = -10 + Math.random() * 20, z = -7 + Math.random() * 14;
+    if (Math.abs(x) < 1.25 || Math.abs(z) < 1.25) continue;
+    const p = cyl(0.05 + Math.random() * 0.04, 0.35, warm, 7);
+    p.position.set(x, 0.18, z);
+    world.add(p);
+    animatables.push({ mesh: p, kind: "sparkPlant", phase: Math.random() * 10 });
   }
 }
-function addObj(mesh, type, label, lines = []) { mesh.userData = { type, label, lines }; objects.push(mesh); world.add(mesh); return mesh; }
+function makeSkyRelics(ch) {
+  const g = new THREE.Group();
+  const [, accent, warm] = ch.palette;
+  const westMoon = orb(0.7, 0xffd166, 0xffd166);
+  westMoon.position.set(-7.5, 6.8, -10.5);
+  const eastMoon = orb(0.62, 0xffd6e8, 0xff9ac4);
+  eastMoon.position.set(7.8, 6.4, -10.2);
+  g.add(westMoon, eastMoon);
+  const bridge = cyl(0.035, 15.2, accent, 8);
+  bridge.rotation.z = Math.PI / 2;
+  bridge.rotation.y = 0.12;
+  bridge.position.set(0, 5.7, -10.3);
+  g.add(bridge);
+  for (let i = 0; i < 36; i++) {
+    const star = orb(0.025 + Math.random() * 0.03, i % 3 ? 0xffffff : warm, i % 3 ? 0xffffff : warm);
+    star.position.set(-12 + Math.random() * 24, 3.2 + Math.random() * 5.2, -8.5 - Math.random() * 4);
+    g.add(star);
+    animatables.push({ mesh: star, kind: "star", phase: Math.random() * 10 });
+  }
+  for (let i = 0; i < 5; i++) {
+    const island = cyl(0.75 + Math.random() * 0.45, 0.18, ch.palette[0] + 0x171717, 12);
+    island.position.set(-8 + i * 4, 1.8 + Math.sin(i) * 0.35, -9.6 - Math.cos(i));
+    island.scale.z = 0.55;
+    g.add(island);
+    animatables.push({ mesh: island, kind: "island", phase: i, baseY: island.position.y });
+  }
+  animatables.push({ mesh: westMoon, kind: "moon", phase: 0 });
+  animatables.push({ mesh: eastMoon, kind: "moon", phase: 2 });
+  return g;
+}
+function addObj(mesh, type, label, lines = [], id = label) {
+  mesh.userData = { type, label, lines, id };
+  objects.push(mesh);
+  world.add(mesh);
+  return mesh;
+}
 function buildChapterProps(ch) {
   const [, accent, warm] = ch.palette;
   const portal = new THREE.Group();
   const ring = new THREE.Mesh(new THREE.TorusGeometry(0.82, 0.08, 12, 48), new THREE.MeshStandardMaterial({ color: warm, emissive: warm, emissiveIntensity: 0.75 }));
   ring.rotation.x = Math.PI / 2; portal.add(ring);
   const orbCore = orb(0.32, warm, warm); orbCore.position.y = 0.35; portal.add(orbCore);
-  portal.position.set(0, 0.3, -6.6); addObj(portal, "portal", ch.relic, ["The path forward answers only after this memory is understood."]);
-  const relic = orb(0.35, warm, warm); relic.position.set(0, 0.58, -1.4); addObj(relic, "relic", ch.relic, ch.lines);
+  portal.position.set(0, 0.3, -6.6);
+  addObj(portal, "portal", `Gate to next realm`, ["The path forward answers only after this memory is understood."], `${ch.id}:portal`);
+  animatables.push({ mesh: portal, kind: "portal", phase: 0 });
+  world.add(makeLabel(0, 1.55, -6.6, "NEXT REALM", warm));
+  if (!save.relics.includes(ch.relic)) {
+    const relic = orb(0.35, warm, warm);
+    relic.position.set(0, 0.58, -1.4);
+    addObj(relic, "relic", ch.relic, ch.lines, `${ch.id}:relic`);
+    animatables.push({ mesh: relic, kind: "relic", phase: 1 });
+    world.add(makeLabel(0, 1.18, -1.4, ch.relic.toUpperCase(), warm));
+  }
   const npc = ch.npc === "Ammara" ? dragon : ch.npc === "Pika" ? pika : mufliya;
   npc.position.x = 3.4; npc.position.z = -2.1; npc.position.y = ch.npc === "Ammara" ? 5.2 : 0.55;
-  addObj(makeSign(-3.8, -2.1, ch.npc, warm), "npc", ch.npc, [ch.npcLine]);
+  addObj(makeSign(-3.8, -2.1, ch.npc, warm), "npc", ch.npc, [ch.npcLine], `${ch.id}:npc`);
+  world.add(makeLabel(-3.8, 1.34, -2.1, ch.npc, warm));
+  const collected = save.shards[ch.id] || [];
   for (let i = 0; i < 5; i++) {
-    const shard = orb(0.16, accent, accent); shard.position.set(-6 + i * 3, 0.45, 2 + Math.sin(i) * 2.4); addObj(shard, "shard", `Memory shard ${i + 1}`, [ch.lines[i % ch.lines.length]]);
+    const shardId = `${ch.id}:shard:${i}`;
+    if (collected.includes(shardId)) continue;
+    const shard = orb(0.16, accent, accent);
+    shard.position.set(-6 + i * 3, 0.45, 2 + Math.sin(i) * 2.4);
+    addObj(shard, "shard", `Memory shard ${i + 1}`, [ch.lines[i % ch.lines.length]], shardId);
+    animatables.push({ mesh: shard, kind: "shard", phase: i });
   }
   if (ch.props === "cards") for (let i = 0; i < 5; i++) { const card = box(0.9, 0.08, 1.2, 0xffd6e8); card.position.set(-5 + i * 2.5, 0.15, -4.4); world.add(card); }
   if (ch.props === "aviary") for (let i = 0; i < 8; i++) { const bar = cyl(0.025, 3.2, 0xbfe9ff, 8); bar.position.set(-4 + i, 1.6, -3.9); world.add(bar); }
   if (ch.props === "bridge") for (let i = -7; i <= 7; i++) { const b = box(0.72, 0.18, 0.55, warm); b.position.set(i * 0.8, 0.08, -3.5 + Math.sin(i) * 0.2); world.add(b); }
   if (ch.props === "garden") for (let i = 0; i < 18; i++) { const flower = orb(0.08, i % 2 ? 0xff86b7 : 0xffd166, i % 2 ? 0xff86b7 : 0xffd166); flower.position.set(-8 + Math.random() * 16, 0.25, -5 + Math.random() * 9); world.add(flower); }
+  if (ch.id === "hinge") {
+    const gate = makeHingeGate(warm, accent);
+    gate.position.set(0, 0, -4.3);
+    world.add(gate);
+  }
+  if (ch.id === "shrine") {
+    const altar = makeAltar(warm);
+    altar.position.set(0, 0.02, -0.1);
+    world.add(altar);
+  }
 }
 function makeSign(x, z, label, c) { const g = new THREE.Group(); const post = box(0.08, 0.7, 0.08, 0x6a4a2c); post.position.y = 0.35; const face = box(1.2, 0.4, 0.08, c); face.position.y = 0.82; g.add(post, face); g.position.set(x, 0, z); return g; }
+function makeTree(x, z, leaf) {
+  const g = new THREE.Group();
+  const trunk = cyl(0.12, 0.85, 0x6d4528, 8);
+  trunk.position.y = 0.42;
+  const crown = orb(0.6, leaf, leaf);
+  crown.position.y = 1.12;
+  const crown2 = orb(0.42, leaf + 0x101010, leaf);
+  crown2.position.set(0.26, 1.42, -0.08);
+  g.add(trunk, crown, crown2);
+  g.position.set(x, 0, z);
+  return g;
+}
+function makeLantern(x, z, c) {
+  const g = new THREE.Group();
+  const post = cyl(0.035, 1.2, 0x3a2b48, 8);
+  post.position.y = 0.6;
+  const light = orb(0.16, c, c);
+  light.position.y = 1.25;
+  const glow = new THREE.PointLight(c, 0.8, 4);
+  glow.position.y = 1.25;
+  g.add(post, light, glow);
+  g.position.set(x, 0, z);
+  animatables.push({ mesh: light, kind: "lantern", phase: Math.random() * 8, light: glow });
+  return g;
+}
+function makeLabel(x, y, z, text, c) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512; canvas.height = 128;
+  const cx = canvas.getContext("2d");
+  cx.fillStyle = "rgba(9,8,20,.72)";
+  cx.fillRect(0, 0, 512, 128);
+  cx.strokeStyle = `#${c.toString(16).padStart(6, "0")}`;
+  cx.lineWidth = 6;
+  cx.strokeRect(8, 8, 496, 112);
+  cx.fillStyle = "#fff";
+  cx.font = "bold 38px system-ui";
+  cx.textAlign = "center";
+  cx.fillText(text, 256, 76);
+  const tex = new THREE.CanvasTexture(canvas);
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+  sprite.position.set(x, y, z);
+  sprite.scale.set(2.7, 0.68, 1);
+  return sprite;
+}
+function makeHingeGate(warm, accent) {
+  const g = new THREE.Group();
+  for (let i = 0; i < 5; i++) {
+    const card = box(0.85, 0.06, 1.15, i % 2 ? 0xffd6e8 : 0xffffff);
+    card.position.set(-2.4 + i * 1.2, 0.28 + i * 0.03, Math.sin(i) * 0.18);
+    card.rotation.y = (i - 2) * 0.16;
+    g.add(card);
+  }
+  const heart = orb(0.28, 0xff6f9f, 0xff6f9f);
+  heart.scale.set(1, 0.8, 0.45);
+  heart.position.set(0, 1.1, 0);
+  g.add(heart);
+  const line = cyl(0.03, 4.8, accent, 8);
+  line.rotation.z = Math.PI / 2;
+  line.position.y = 0.12;
+  g.add(line);
+  animatables.push({ mesh: heart, kind: "heart", phase: 0 });
+  return g;
+}
+function makeAltar(c) {
+  const g = new THREE.Group();
+  const base = cyl(1.4, 0.28, 0x2d1d48, 16);
+  base.position.y = 0.14;
+  const top = cyl(0.9, 0.18, c, 16);
+  top.position.y = 0.42;
+  g.add(base, top);
+  for (let i = 0; i < 8; i++) {
+    const gem = orb(0.12, i % 2 ? 0xff8db3 : 0xffd166, i % 2 ? 0xff8db3 : 0xffd166);
+    gem.position.set(Math.cos(i) * 1.15, 0.62, Math.sin(i) * 1.15);
+    g.add(gem);
+    animatables.push({ mesh: gem, kind: "shard", phase: i });
+  }
+  return g;
+}
 
 function updateHud() {
   placeEl.textContent = `${activeChapter.title} · ${activeChapter.place}`;
   questEl.textContent = activeChapter.quest;
-  relicsEl.textContent = `${save.relics.length}/${chapters.length} relics · ${formatTime(save.playSeconds)}`;
+  const shardCount = (save.shards[activeChapter.id] || []).length;
+  const relicState = save.relics.includes(activeChapter.relic) ? "relic secured" : `${shardCount}/5 shards`;
+  relicsEl.textContent = `${save.relics.length}/${chapters.length} relics · ${relicState} · ${formatTime(save.playSeconds)}`;
 }
 function formatTime(seconds) { const h = Math.floor(seconds / 3600); const m = Math.floor((seconds % 3600) / 60); const s = Math.floor(seconds % 60); return `${h}h ${m}m ${s}s`; }
 function togetherTimer() { const d = Math.max(0, Date.now() - START_DATE.getTime()); const s = Math.floor(d / 1000); const months = Math.floor(s / 2629746); const days = Math.floor((s - months * 2629746) / 86400); const h = Math.floor((s % 86400) / 3600); const m = Math.floor((s % 3600) / 60); return `${months} months · ${days} days · ${h}h ${m}m since together`; }
@@ -447,10 +649,44 @@ function interact() {
   }
   if (!nearest) return toast("Nothing close enough. Walk to a glowing object.");
   const { type, label, lines } = nearest.userData;
-  if (type === "portal") return openDialogue("Portal", [`Continue after recovering ${activeChapter.relic}?`, "The realm folds into the next page of the story."], "portal");
-  if (type === "relic") { if (!save.relics.includes(activeChapter.relic)) save.relics.push(activeChapter.relic); persist(); updateHud(); return openDialogue(label, lines); }
-  if (type === "shard") return openDialogue(label, lines);
+  if (type === "portal") {
+    if (!save.relics.includes(activeChapter.relic)) {
+      return openDialogue("Sealed Gate", [
+        `The gate asks for ${activeChapter.relic}.`,
+        "Collect memory shards, speak to the guide, and claim the relic before leaving this realm."
+      ]);
+    }
+    return openDialogue("Portal", [`${activeChapter.relic} answers.`, "The realm folds into the next page of the story."], "portal");
+  }
+  if (type === "relic") {
+    const shardCount = (save.shards[activeChapter.id] || []).length;
+    if (shardCount < 3) {
+      return openDialogue(label, [
+        `The ${label} is still asleep.`,
+        "Collect at least 3 memory shards in this realm to wake it."
+      ]);
+    }
+    if (!save.relics.includes(activeChapter.relic)) save.relics.push(activeChapter.relic);
+    removeObject(nearest);
+    persist();
+    updateHud();
+    return openDialogue(label, [...lines, `${label} joined your relics.`]);
+  }
+  if (type === "shard") {
+    const shardId = nearest.userData.id;
+    save.shards[activeChapter.id] ||= [];
+    if (!save.shards[activeChapter.id].includes(shardId)) save.shards[activeChapter.id].push(shardId);
+    removeObject(nearest);
+    persist();
+    updateHud();
+    return openDialogue(label, [...lines, "Memory shard collected."]);
+  }
   if (type === "npc") return openDialogue(label, lines);
+}
+function removeObject(obj) {
+  const i = objects.indexOf(obj);
+  if (i >= 0) objects.splice(i, 1);
+  world.remove(obj);
 }
 function advanceChapter() {
   if (!save.relics.includes(activeChapter.relic)) return toast(`Collect ${activeChapter.relic} first.`);
@@ -472,11 +708,23 @@ function stopMusic() { if (audio) { audio.pause(); audio = null; } }
 function update(dt) {
   if (state !== "play" || dialogueOpen) return;
   velocity.set(0, 0, 0);
+  if (moveTarget && !keys.size) {
+    const dx = moveTarget.x - player.group.position.x;
+    const dz = moveTarget.z - player.group.position.z;
+    const d = Math.hypot(dx, dz);
+    if (d < 0.18) {
+      moveTarget = null;
+      interact();
+    } else {
+      velocity.set(dx / d, 0, dz / d);
+    }
+  }
   if (keys.has("KeyW") || keys.has("ArrowUp")) velocity.z -= 1;
   if (keys.has("KeyS") || keys.has("ArrowDown")) velocity.z += 1;
   if (keys.has("KeyA") || keys.has("ArrowLeft")) velocity.x -= 1;
   if (keys.has("KeyD") || keys.has("ArrowRight")) velocity.x += 1;
   if (velocity.lengthSq() > 0) {
+    if (keys.size) moveTarget = null;
     velocity.normalize().multiplyScalar(player.speed * dt);
     player.group.position.add(velocity);
     player.group.position.x = THREE.MathUtils.clamp(player.group.position.x, -11.2, 11.2);
@@ -485,15 +733,27 @@ function update(dt) {
     player.walk += dt * 12;
     player.legL.rotation.x = Math.sin(player.walk) * 0.55;
     player.legR.rotation.x = -Math.sin(player.walk) * 0.55;
+    player.armL.rotation.x = -Math.sin(player.walk) * 0.45;
+    player.armR.rotation.x = Math.sin(player.walk) * 0.45;
+    player.cape.rotation.x = Math.sin(player.walk) * 0.08;
     save.pos = { x: player.group.position.x, z: player.group.position.z };
   }
   const follow = player.group.position.clone().add(new THREE.Vector3(-0.85, 0, 0.7));
   partner.group.position.lerp(follow, 0.045);
   partner.group.lookAt(player.group.position);
+  const partnerMoving = partner.group.position.distanceTo(follow) > 0.08;
+  if (partnerMoving) {
+    partner.walk += dt * 9;
+    partner.legL.rotation.x = Math.sin(partner.walk) * 0.45;
+    partner.legR.rotation.x = -Math.sin(partner.walk) * 0.45;
+    partner.armL.rotation.x = -Math.sin(partner.walk) * 0.35;
+    partner.armR.rotation.x = Math.sin(partner.walk) * 0.35;
+  }
   dragon.rotation.y += dt * 0.35; dragon.position.y = 5.2 + Math.sin(performance.now() / 800) * 0.22;
   pika.position.y = 0.45 + Math.sin(performance.now() / 280) * 0.06;
   save.playSeconds += dt;
   if (performance.now() - lastSave > 3000) { lastSave = performance.now(); persist(); updateHud(); }
+  updatePrompt();
 }
 function render() {
   const dt = Math.min(clock.getDelta(), 0.05);
@@ -502,9 +762,56 @@ function render() {
   const wide = settings.camera === "wide";
   camera.position.lerp(new THREE.Vector3(target.x, wide ? 14 : 10, target.z + (wide ? 13 : 9)), 0.06);
   camera.lookAt(target.x, 0.6, target.z - 1.5);
-  for (const obj of objects) obj.rotation.y += obj.userData.type === "shard" || obj.userData.type === "relic" ? dt : 0;
+  animateWorld(dt);
   renderer.render(scene, camera);
   requestAnimationFrame(render);
+}
+function animateWorld(dt) {
+  const now = performance.now() / 1000;
+  for (const obj of objects) {
+    const type = obj.userData.type;
+    if (type === "shard" || type === "relic") {
+      obj.rotation.y += dt * 1.5;
+      obj.position.y = (type === "relic" ? 0.58 : 0.45) + Math.sin(now * 2.4 + obj.position.x) * 0.08;
+    }
+    if (type === "portal") {
+      obj.rotation.y += dt * 0.5;
+      obj.scale.setScalar(1 + Math.sin(now * 2) * 0.04);
+    }
+  }
+  for (const item of animatables) {
+    const p = item.phase || 0;
+    if (item.kind === "water") item.mesh.material.opacity = 0.72 + Math.sin(now * 1.4) * 0.08;
+    if (item.kind === "lantern") {
+      item.mesh.scale.setScalar(1 + Math.sin(now * 2.2 + p) * 0.1);
+      if (item.light) item.light.intensity = 0.65 + Math.sin(now * 2.2 + p) * 0.25;
+    }
+    if (item.kind === "sparkPlant") item.mesh.position.y = 0.18 + Math.sin(now * 1.8 + p) * 0.025;
+    if (item.kind === "heart") item.mesh.scale.setScalar(1 + Math.sin(now * 3.5) * 0.12);
+    if (item.kind === "star") item.mesh.scale.setScalar(0.75 + Math.sin(now * 2.8 + p) * 0.28);
+    if (item.kind === "island") item.mesh.position.y = item.baseY + Math.sin(now * 0.9 + p) * 0.08;
+    if (item.kind === "moon") item.mesh.scale.setScalar(1 + Math.sin(now * 0.9 + p) * 0.03);
+  }
+  dragon.rotation.y += dt * 0.55;
+  dragon.rotation.z = Math.sin(now * 1.2) * 0.06;
+  dragon.position.x = Math.sin(now * 0.28) * 1.8;
+  dragon.position.y = 5.2 + Math.sin(now * 1.1) * 0.22;
+  pika.rotation.y += dt * 2;
+  pika.position.y = 0.45 + Math.sin(now * 4) * 0.06;
+}
+function updatePrompt() {
+  let nearest = null, dist = 1.6;
+  for (const obj of objects) {
+    const p = new THREE.Vector3(); obj.getWorldPosition(p);
+    const d = p.distanceTo(player.group.position);
+    if (d < dist) { dist = d; nearest = obj; }
+  }
+  if (!nearest || dialogueOpen) {
+    promptEl.classList.add("hidden");
+    return;
+  }
+  promptEl.classList.remove("hidden");
+  promptEl.textContent = `E / Enter: ${nearest.userData.label}`;
 }
 
 function onResize() { renderer.setSize(window.innerWidth, window.innerHeight); camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); }
@@ -523,8 +830,11 @@ canvas.addEventListener("pointerdown", e => {
   if (!root) return;
   const pos = new THREE.Vector3();
   root.getWorldPosition(pos);
-  player.group.position.set(pos.x, 0, pos.z);
-  interact();
+  const away = player.group.position.clone().sub(pos);
+  if (away.lengthSq() < 0.01) away.set(0.8, 0, 0.8);
+  away.y = 0;
+  away.normalize().multiplyScalar(0.85);
+  moveTarget = new THREE.Vector3(pos.x + away.x, 0, pos.z + away.z);
 });
 dialogueEl.querySelector("button").addEventListener("click", nextDialogue);
 overlay.addEventListener("click", e => {
