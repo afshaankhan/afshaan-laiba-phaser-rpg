@@ -1,1 +1,60 @@
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080914;color:#fff;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;touch-action:none}#game-shell,#world{position:fixed;inset:0;width:100%;height:100%}#world{display:block;background:#080914}.overlay{position:fixed;inset:0;display:grid;place-items:center;padding:24px;z-index:30;background:radial-gradient(circle at 50% 20%,rgba(255,214,232,.08),transparent 34rem),linear-gradient(180deg,rgba(6,8,18,.36),rgba(6,8,18,.82)),url("../concept-art/dragonbound-aaa-visual-target.png") center/cover no-repeat;backdrop-filter:blur(5px)}.overlay.hidden{display:none}.panel{width:min(940px,94vw);max-height:88vh;overflow:auto;text-align:center;padding:30px;border-radius:22px;border:1px solid rgba(255,214,232,.48);background:linear-gradient(145deg,rgba(8,9,20,.8),rgba(34,19,48,.72));box-shadow:0 32px 120px rgba(0,0,0,.55),0 0 60px rgba(201,162,214,.16);backdrop-filter:blur(16px)}.eyebrow{margin:0 0 10px;color:#ffd166;letter-spacing:.18em;text-transform:uppercase;font:900 12px system-ui,sans-serif}.panel h1{font-family:Georgia,serif;margin:0 0 12px;font-size:clamp(48px,8vw,92px);line-height:.92;color:#ffd6e8;text-shadow:0 0 30px rgba(255,122,184,.45)}.panel h2{margin:0 0 12px;color:#ffd6e8;font-size:34px}.panel p{margin:10px auto;color:#f3e8ff;line-height:1.65;max-width:780px}.buttons{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:24px}button{border:1px solid rgba(255,255,255,.32);border-radius:999px;background:linear-gradient(180deg,rgba(255,122,184,.34),rgba(126,86,255,.32));color:#fff;font:900 14px system-ui,sans-serif;padding:12px 17px;cursor:pointer}button:hover{border-color:#ffd166;transform:translateY(-1px);box-shadow:0 0 24px rgba(255,209,102,.22)}.topbar{position:fixed;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;z-index:10;pointer-events:none}.hud-card{padding:12px 14px;border-radius:15px;border:1px solid rgba(255,255,255,.18);background:rgba(7,9,20,.62);box-shadow:0 14px 42px rgba(0,0,0,.28);backdrop-filter:blur(10px);max-width:min(620px,calc(100vw - 28px))}.hud-card strong{display:block;color:#ffd6e8;font-size:14px;font-weight:950}.hud-card span,.hud-card em{display:block;color:#eee3ff;font-size:12px;font-style:normal;font-weight:750;margin-top:3px}.prompt{position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:11;padding:9px 14px;border-radius:999px;border:1px solid rgba(255,209,102,.55);background:rgba(7,9,20,.72);color:#ffd166;font:900 12px system-ui,sans-serif;box-shadow:0 0 24px rgba(255,209,102,.18);pointer-events:none}.prompt.hidden{display:none}.dialogue{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);width:min(860px,calc(100vw - 28px));z-index:20;padding:20px 22px;border-radius:18px;border:1px solid rgba(255,214,232,.58);background:linear-gradient(145deg,rgba(8,10,22,.96),rgba(34,19,48,.95));box-shadow:0 22px 80px rgba(0,0,0,.46);pointer-events:auto}.dialogue.hidden{display:none}.dialogue h3{margin:0 0 8px;color:#ffd166;text-transform:uppercase;letter-spacing:.08em;font-size:13px}.dialogue p{margin:0 0 16px;color:#fff;font-size:18px;line-height:1.55}.mobile{position:fixed;left:18px;right:18px;bottom:18px;z-index:12;display:none;justify-content:space-between;pointer-events:none}.mobile button{pointer-events:auto;width:58px;height:58px;padding:0;border-radius:16px;background:rgba(7,9,20,.62);backdrop-filter:blur(8px);font-size:18px}.pad{display:grid;grid-template-columns:repeat(3,58px);grid-template-rows:repeat(3,58px);gap:5px}.pad [data-m=up]{grid-column:2;grid-row:1}.pad [data-m=left]{grid-column:1;grid-row:2}.pad [data-m=down]{grid-column:2;grid-row:2}.pad [data-m=right]{grid-column:3;grid-row:2}.act{display:flex;align-items:end;gap:10px}.codex-note{position:fixed;right:12px;bottom:10px;color:rgba(255,255,255,.38);font-size:11px;z-index:3}@media(max-width:860px){.mobile{display:flex}.topbar{top:8px;left:8px;right:8px;flex-direction:column}.dialogue{bottom:104px}.panel{padding:22px}.hud-card{padding:10px 12px}}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050713;color:#fff;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;touch-action:none}
+#game-shell,#world{position:fixed;inset:0;width:100%;height:100%}
+#world{display:block;background:#050713}
+.overlay{position:fixed;inset:0;display:grid;place-items:center;padding:24px;z-index:30;background:radial-gradient(circle at 50% 16%,rgba(255,214,232,.08),transparent 34rem),linear-gradient(90deg,rgba(5,7,19,.88),rgba(5,7,19,.42) 48%,rgba(5,7,19,.78)),url("../concept-art/dragonbound-cinematic-key-art.png") center/cover no-repeat;backdrop-filter:blur(3px)}
+.overlay.hidden{display:none}
+.panel{width:min(960px,94vw);max-height:88vh;overflow:auto;text-align:center;padding:32px;border-radius:24px;border:1px solid rgba(255,231,194,.42);background:linear-gradient(145deg,rgba(7,9,22,.74),rgba(32,18,46,.66));box-shadow:0 36px 140px rgba(0,0,0,.62),0 0 80px rgba(255,214,232,.14);backdrop-filter:blur(18px)}
+.title-panel{margin-left:min(2vw,24px);margin-right:auto;text-align:left;max-width:760px}
+.eyebrow{margin:0 0 10px;color:#ffd166;letter-spacing:.18em;text-transform:uppercase;font:900 12px system-ui,sans-serif}
+.panel h1{font-family:Georgia,serif;margin:0 0 14px;font-size:clamp(46px,8vw,92px);line-height:.92;color:#ffe0ec;text-shadow:0 0 30px rgba(255,122,184,.45)}
+.panel h2{margin:0 0 14px;color:#ffe0ec;font-size:34px}
+.panel h3{color:#ffd166;margin:10px 0 8px}
+.panel p{margin:10px auto;color:#f5ecff;line-height:1.65;max-width:780px}
+.title-panel p{margin-left:0}
+.buttons{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:24px}
+.title-panel .buttons{justify-content:flex-start}
+button{border:1px solid rgba(255,255,255,.32);border-radius:999px;background:linear-gradient(180deg,rgba(255,122,184,.38),rgba(126,86,255,.34));color:#fff;font:900 14px system-ui,sans-serif;padding:12px 17px;cursor:pointer}
+button:hover{border-color:#ffd166;transform:translateY(-1px);box-shadow:0 0 24px rgba(255,209,102,.24)}
+.hero-choice{display:grid;grid-template-columns:repeat(2,minmax(240px,1fr));gap:18px;margin-top:20px}
+.hero-choice article{padding:18px;border-radius:20px;border:1px solid rgba(255,255,255,.18);background:rgba(5,7,19,.48);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.choice-portrait{display:block;width:100%;height:220px;border-radius:16px;background-image:url("../concept-art/dragonbound-character-portraits.png");background-repeat:no-repeat;background-size:500% 100%;box-shadow:0 18px 60px rgba(0,0,0,.36);border:1px solid rgba(255,255,255,.16)}
+.choice-portrait.afshaan{background-position:0% center}
+.choice-portrait.laiba{background-position:25% center}
+.topbar{position:fixed;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;z-index:10;pointer-events:none}
+.hud-card{padding:12px 14px;border-radius:15px;border:1px solid rgba(255,255,255,.18);background:rgba(5,7,19,.58);box-shadow:0 14px 42px rgba(0,0,0,.3);backdrop-filter:blur(12px);max-width:min(620px,calc(100vw - 28px))}
+.hud-card strong{display:block;color:#ffe0ec;font-size:14px;font-weight:950}
+.hud-card span,.hud-card em{display:block;color:#eee3ff;font-size:12px;font-style:normal;font-weight:750;margin-top:3px}
+.prompt{position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:11;padding:9px 14px;border-radius:999px;border:1px solid rgba(255,209,102,.55);background:rgba(5,7,19,.72);color:#ffd166;font:900 12px system-ui,sans-serif;box-shadow:0 0 24px rgba(255,209,102,.18);pointer-events:none}
+.prompt.hidden{display:none}
+.dialogue{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);width:min(960px,calc(100vw - 28px));z-index:20;display:grid;grid-template-columns:156px 1fr;gap:18px;padding:18px;border-radius:22px;border:1px solid rgba(255,231,194,.52);background:linear-gradient(145deg,rgba(5,7,19,.96),rgba(30,18,46,.94));box-shadow:0 24px 90px rgba(0,0,0,.5);pointer-events:auto}
+.dialogue.hidden{display:none}
+.portrait{min-height:164px;border-radius:18px;background-image:url("../concept-art/dragonbound-character-portraits.png");background-repeat:no-repeat;background-size:500% 100%;border:1px solid rgba(255,255,255,.16);box-shadow:inset 0 -28px 44px rgba(0,0,0,.28)}
+.dialogue[data-speaker=afshaan] .portrait{background-position:0% center}
+.dialogue[data-speaker=laiba] .portrait{background-position:25% center}
+.dialogue[data-speaker=pika] .portrait{background-position:50% center}
+.dialogue[data-speaker=mufliya] .portrait{background-position:75% center}
+.dialogue[data-speaker=ammara] .portrait{background-position:100% center}
+.dialogue h3{margin:0 0 8px;color:#ffd166;text-transform:uppercase;letter-spacing:.08em;font-size:13px}
+.dialogue p{margin:0 0 16px;color:#fff;font-size:18px;line-height:1.55}
+.mobile{position:fixed;left:18px;right:18px;bottom:18px;z-index:12;display:none;justify-content:space-between;pointer-events:none}
+.mobile button{pointer-events:auto;width:58px;height:58px;padding:0;border-radius:16px;background:rgba(7,9,20,.62);backdrop-filter:blur(8px);font-size:18px}
+.pad{display:grid;grid-template-columns:repeat(3,58px);grid-template-rows:repeat(3,58px);gap:5px}
+.pad [data-m=up]{grid-column:2;grid-row:1}
+.pad [data-m=left]{grid-column:1;grid-row:2}
+.pad [data-m=down]{grid-column:2;grid-row:2}
+.pad [data-m=right]{grid-column:3;grid-row:2}
+.act{display:flex;align-items:end;gap:10px}
+.codex-note{position:fixed;right:12px;bottom:10px;color:rgba(255,255,255,.38);font-size:11px;z-index:3}
+@media(max-width:860px){
+  .mobile{display:flex}
+  .topbar{top:8px;left:8px;right:8px;flex-direction:column}
+  .dialogue{bottom:104px;grid-template-columns:92px 1fr;padding:12px}
+  .portrait{min-height:118px}
+  .panel{padding:22px}
+  .title-panel{text-align:center;margin:auto}
+  .title-panel .buttons{justify-content:center}
+  .hero-choice{grid-template-columns:1fr}
+  .choice-portrait{height:180px}
+  .hud-card{padding:10px 12px}
+}

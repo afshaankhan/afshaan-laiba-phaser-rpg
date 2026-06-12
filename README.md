@@ -2,7 +2,9 @@
 
 A browser-based 3D fantasy romance adventure built from Afshaan and Laiba's relationship lore.
 
-This version is a full Three.js rebuild: no tilemap prototype, no 2D platformer. It is a playable third-person 3D world with authored low-poly character models, chapter-specific environments, collectible memory sparks, relic progression, NPC dialogue, partner following, click-to-walk, mobile controls, autosave, music preview ambience, and the Month Six ending timer.
+This version is a Three.js cinematic web prototype: no tilemap prototype, no 2D platformer. It combines a playable third-person 3D world with generated high-fidelity concept/key art, chapter-specific environments, collectible memory sparks, relic progression, NPC dialogue, partner following, click-to-walk, mobile controls, autosave, music preview ambience, and the Month Six ending timer.
+
+The visual direction is now closer to the requested Assassin's Creed / Stray-style target through cinematic key art, character portrait art, and painted realm backdrops. It is still a browser prototype, not an Unreal/Unity AAA production build with rigged hero models.
 
 ## Play
 
@@ -47,6 +49,7 @@ The full story bible is in `docs/dragonbound-story-script.md`.
 ## Game Features
 
 - Three.js 3D rendering with shadows, fog, tone mapping, and procedural fantasy environments
+- Cinematic title art, character portrait sheet, and realm backdrop art wired directly into the game UI/runtime
 - Third-person follow camera with normal/wide camera modes
 - Designed character models for Afshaan, Laiba, Pika, Mufliya, and Ammara
 - Play as Afshaan or Laiba
@@ -78,4 +81,11 @@ The full story bible is in `docs/dragonbound-story-script.md`.
 
 The game is static and runs on GitHub Pages without a build step. It imports Three.js from a pinned ESM CDN and keeps all game logic in `src/main.js`.
 
-This is intentionally browser-friendly procedural 3D rather than a heavyweight Unreal/Unity project, so it can run immediately from a shareable website.
+This is intentionally browser-friendly cinematic/procedural 3D rather than a heavyweight Unreal/Unity project, so it can run immediately from a shareable website.
+
+## Cinematic Art Assets
+
+- `concept-art/dragonbound-cinematic-key-art.png` — current title/menu visual target.
+- `concept-art/dragonbound-character-portraits.png` — dialogue and character-select portrait sheet.
+- `concept-art/dragonbound-between-realm-backdrop.png` — in-world panoramic backdrop layer.
+- `concept-art/dragonbound-aaa-visual-target.png` — earlier target concept retained for reference.

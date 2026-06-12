@@ -21,8 +21,11 @@ The browser prototype should be treated as a playable design prototype, not the 
 
 ## Visual Target
 
-Reference file:
+Reference files:
 
+- `concept-art/dragonbound-cinematic-key-art.png`
+- `concept-art/dragonbound-character-portraits.png`
+- `concept-art/dragonbound-between-realm-backdrop.png`
 - `concept-art/dragonbound-aaa-visual-target.png`
 
 Target feel:

@@ -19,7 +19,7 @@ const chapters = [
 ];
 
 const shell = document.getElementById("game-shell");
-shell.innerHTML = `<canvas id="world"></canvas><section id="overlay" class="overlay"></section><section class="topbar"><div class="hud-card"><strong id="place"></strong><span id="quest"></span><em id="controls">WASD/Arrows move · E interact · J journal · S save · M music</em></div><div class="hud-card"><strong id="relics"></strong><span id="sparkline"></span></div></section><section id="prompt" class="prompt hidden"></section><section id="dialogue" class="dialogue hidden"><h3></h3><p></p><button>Continue</button></section><section class="mobile"><div class="pad"><button data-m="up">▲</button><button data-m="left">◀</button><button data-m="down">▼</button><button data-m="right">▶</button></div><div class="act"><button data-action="interact">E</button><button data-action="journal">J</button></div></section><span class="codex-note">Dragonbound 3D</span>`;
+shell.innerHTML = `<canvas id="world"></canvas><section id="overlay" class="overlay"></section><section class="topbar"><div class="hud-card"><strong id="place"></strong><span id="quest"></span><em id="controls">WASD/Arrows move · E interact · J journal · S save · M music</em></div><div class="hud-card"><strong id="relics"></strong><span id="sparkline"></span></div></section><section id="prompt" class="prompt hidden"></section><section id="dialogue" class="dialogue hidden"><div class="portrait"></div><div class="dialogue-copy"><h3></h3><p></p><button>Continue</button></div></section><section class="mobile"><div class="pad"><button data-m="up">▲</button><button data-m="left">◀</button><button data-m="down">▼</button><button data-m="right">▶</button></div><div class="act"><button data-action="interact">E</button><button data-action="journal">J</button></div></section><span class="codex-note">Dragonbound cinematic prototype</span>`;
 
 const canvas = document.getElementById("world");
 const overlay = document.getElementById("overlay");
@@ -44,6 +44,18 @@ const camera = new THREE.PerspectiveCamera(54, innerWidth/innerHeight, 0.1, 160)
 const clock = new THREE.Clock();
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
+const textureLoader = new THREE.TextureLoader();
+const artUrls = {
+  key: new URL("../concept-art/dragonbound-cinematic-key-art.png", import.meta.url).href,
+  backdrop: new URL("../concept-art/dragonbound-between-realm-backdrop.png", import.meta.url).href,
+  portraits: new URL("../concept-art/dragonbound-character-portraits.png", import.meta.url).href
+};
+const artTextures = {
+  key: textureLoader.load(artUrls.key),
+  backdrop: textureLoader.load(artUrls.backdrop)
+};
+artTextures.key.colorSpace = THREE.SRGBColorSpace;
+artTextures.backdrop.colorSpace = THREE.SRGBColorSpace;
 const world = new THREE.Group();
 scene.add(world);
 
@@ -157,12 +169,27 @@ function buildLights(){
   const sun=new THREE.DirectionalLight(0xffffff,1.1); sun.position.set(8,16,10); sun.castShadow=true; sun.shadow.mapSize.set(2048,2048); sun.userData.light=true; scene.add(sun);
 }
 function buildRealm(ch){
+  addCinematicBackdrop(ch);
   const floorMat=material(ch.ground,{roughness:.82});
   const floor=new THREE.Mesh(new THREE.PlaneGeometry(46,34,32,24),floorMat); floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; world.add(floor);
   const pathMat=material(ch.color,{emissive:ch.color,emissiveIntensity:.08,roughness:.75});
   const path1=new THREE.Mesh(new THREE.PlaneGeometry(3.2,28),pathMat); path1.rotation.x=-Math.PI/2; path1.position.y=.012; world.add(path1);
   const path2=new THREE.Mesh(new THREE.PlaneGeometry(30,3.2),pathMat); path2.rotation.x=-Math.PI/2; path2.position.y=.015; path2.position.z=-3.5; world.add(path2);
   addMoons(ch); addBoundaries(); addLandmark(ch); addGuide(ch); addSparks(ch); addRelicAndPortal(ch); addAmbient(ch);
+}
+function addCinematicBackdrop(ch){
+  const plane = new THREE.Mesh(
+    new THREE.PlaneGeometry(54,30),
+    new THREE.MeshBasicMaterial({map:artTextures.backdrop, transparent:true, opacity:.68, depthWrite:false})
+  );
+  plane.position.set(0,7.6,-24);
+  world.add(plane);
+  const tint = new THREE.Mesh(
+    new THREE.PlaneGeometry(55,31),
+    new THREE.MeshBasicMaterial({color:ch.sky, transparent:true, opacity:.28, depthWrite:false})
+  );
+  tint.position.set(0,7.58,-23.85);
+  world.add(tint);
 }
 function addBoundaries(){[[0,-17,46,1],[0,17,46,1],[-23,0,1,34],[23,0,1,34]].forEach(([x,z,w,d])=>{const b=box(w,.8,d,0x111827,{opacity:.08}); b.position.set(x,.4,z); b.visible=false; world.add(b); solids.push({x,z,w,d});});}
 function addMoons(ch){
@@ -202,12 +229,13 @@ function configureCharacter(obj,name){obj.name=name; obj.group.visible=true; con
 function nearestObject(max=1.55){let best=null,dist=max; for(const o of objects){const p=new THREE.Vector3(); o.getWorldPosition(p); p.y=0; const d=p.distanceTo(player.group.position); if(d<dist){best=o;dist=d;}} return best;}
 function interact(){if(dialogue.length)return nextDialogue(); const o=nearestObject(); if(!o)return toast("Walk closer to a guide, spark, relic, or portal."); const {type,label,lines,id}=o.userData; if(type==="spark"){if(!sparkList().includes(id))sparkList().push(id); removeObject(o); persist(); updateHud(); return openDialogue(label,[...lines,"Memory spark collected."]);} if(type==="relic"){if(sparkList().length<3)return openDialogue(label,[`The ${label} is sleeping. Collect at least 3 memory sparks first.`]); if(!save.relics.includes(active.relic))save.relics.push(active.relic); removeObject(o); persist(); updateHud(); return openDialogue(label,[...lines,`${label} recovered.`]);} if(type==="portal"){if(!save.relics.includes(active.relic))return openDialogue("Sealed Gate",[`Recover ${active.relic} before leaving this realm.`]); if(save.chapter<chapters.length-1){loadChapter(save.chapter+1,true);} else openDialogue("Loading Month Six",[togetherTimer(),"Mashallah. Five months together. To be continued..."]); return;} if(type==="npc")return openDialogue(label,lines);}
 function removeObject(o){objects=objects.filter(x=>x!==o); world.remove(o);}
-function openDialogue(title,lines){dialogueTitle=title; dialogue=lines.slice(); dialogueEl.classList.remove("hidden"); nextDialogue();}
+function portraitKey(title){if(/laiba/i.test(title))return "laiba"; if(/pika/i.test(title))return "pika"; if(/mufliya|oracle/i.test(title))return "mufliya"; if(/ammara|dragon/i.test(title))return "ammara"; if(/afshaan/i.test(title))return "afshaan"; if(save.player==="Laiba")return "laiba"; return "afshaan";}
+function openDialogue(title,lines){dialogueTitle=title; dialogue=lines.slice(); dialogueEl.dataset.speaker=portraitKey(title); dialogueEl.classList.remove("hidden"); nextDialogue();}
 function nextDialogue(){const line=dialogue.shift(); if(!line){dialogueEl.classList.add("hidden"); return;} dialogueEl.querySelector("h3").textContent=dialogueTitle; dialogueEl.querySelector("p").textContent=line;}
 function toast(msg){questEl.textContent=msg; setTimeout(updateHud,1700);}
 function updateHud(){placeEl.textContent=`${active.title} · ${active.place}`; questEl.textContent=active.quest; relicsEl.textContent=`${save.relics.length}/${chapters.length} relics · ${fmt(save.playSeconds)}`; sparklineEl.textContent=`${sparkList().length}/5 sparks · ${save.relics.includes(active.relic)?active.relic+" secured":"relic sleeping"}`;}
-function showTitle(){state="title"; overlay.className="overlay"; overlay.innerHTML=`<div class="panel"><p class="eyebrow">Immersive 3D Fantasy Romance Adventure</p><h1>Afshaan & Laiba:<br/>Dragonbound</h1><p>Explore The Between as a playable 3D love adventure: Afshaan the Starbound Scribe, Laiba the Moonlit Keeper, Pika the pigeon, Mufliya the Moonroom Oracle, and Ammara the Dragon of Shared Light.</p><div class="buttons"><button data-menu="new">New Adventure</button><button data-menu="resume">Resume</button><button data-menu="choose">Choose Hero</button><button data-menu="settings">Settings</button><button data-menu="story">Story</button></div></div>`;}
-function showChoose(){overlay.className="overlay"; overlay.innerHTML=`<div class="panel"><h2>Choose Your Hero</h2><p>Both routes preserve the same canon. Afshaan carries the Messenger Blade and phone-orb. Laiba carries the Moonthread Charm and leaves moonflowers in her aura.</p><div class="buttons"><button data-player="Afshaan">Play as Afshaan</button><button data-player="Laiba">Play as Laiba</button><button data-menu="back">Back</button></div></div>`;}
+function showTitle(){state="title"; overlay.className="overlay"; overlay.innerHTML=`<div class="panel title-panel"><p class="eyebrow">Cinematic 3D Fantasy Romance Adventure</p><h1>Afshaan & Laiba:<br/>Dragonbound</h1><p>This build now uses high-fidelity key art and cinematic world layers as the visual target while keeping the playable Three.js adventure underneath: choose Afshaan or Laiba, explore The Between, collect relics, meet Pika, Mufliya, and Ammara, and carry the story toward Month Six.</p><div class="buttons"><button data-menu="new">New Adventure</button><button data-menu="resume">Resume</button><button data-menu="choose">Choose Hero</button><button data-menu="settings">Settings</button><button data-menu="story">Story</button></div></div>`;}
+function showChoose(){overlay.className="overlay"; overlay.innerHTML=`<div class="panel"><h2>Choose Your Hero</h2><div class="hero-choice"><article><span class="choice-portrait afshaan"></span><h3>Afshaan</h3><p>Starbound Scribe with the Messenger Blade, blue-silver outfit, star pin, and glowing phone-orb.</p><button data-player="Afshaan">Play as Afshaan</button></article><article><span class="choice-portrait laiba"></span><h3>Laiba</h3><p>Moonlit Keeper with rose, teal, moon-white clothing, Moonthread charm, and moonflower aura.</p><button data-player="Laiba">Play as Laiba</button></article></div><div class="buttons"><button data-menu="back">Back</button></div></div>`;}
 function showStory(){overlay.className="overlay"; overlay.innerHTML=`<div class="panel"><h2>Story Bible Canon</h2><p>Afshaan and Laiba matched while Afshaan was in Baltimore and Laiba was in Ellicott City. Pika's photo created the first joke: “Is that inside a microwave??” After two months and Ramadan, Afshaan moved to Frisco for his job search, and the nearby beginning became long distance. The daily calls, songs, games, sleep calls, and screen kisses awakened Ammara and formed The Between.</p><div class="buttons"><button data-menu="back">Back</button></div></div>`;}
 function showSettings(){overlay.className="overlay"; overlay.innerHTML=`<div class="panel"><h2>Settings</h2><p>Music previews are ${settings.music?"ON":"OFF"}. Camera: ${settings.camera||"follow"}.</p><div class="buttons"><button data-menu="music">Toggle Music</button><button data-menu="wide">Toggle Camera</button><button data-menu="back">Back</button></div></div>`;}
 function startGame(fresh=false){if(fresh){const chosen=save.player||"Afshaan"; save=defaultSave(); save.player=chosen; custom=save.custom;} overlay.className="overlay hidden"; state="play"; loadChapter(save.chapter||0,!save.pos||fresh); bootMusic();}
@@ -219,7 +247,7 @@ function update(dt){if(state!=="play"||dialogue.length)return; const dir=new THR
 function animateCharacter(c,dt,moving){if(moving){c.walk+=dt*10; if(c.legL)c.legL.rotation.x=Math.sin(c.walk)*.55; if(c.legR)c.legR.rotation.x=-Math.sin(c.walk)*.55; if(c.armL)c.armL.rotation.x=-Math.sin(c.walk)*.35; if(c.armR)c.armR.rotation.x=Math.sin(c.walk)*.35;} if(c.phone)c.phone.position.y=.75+Math.sin(performance.now()/300)*.035;}
 function animateWorld(dt){const t=performance.now()/1000; for(const p of particles){if(p.type==="star")p.mesh.scale.setScalar(.7+Math.sin(t*2.5+p.phase)*.25); if(p.type==="spark"||p.type==="relic"){p.mesh.rotation.y+=dt*1.8; p.mesh.position.y=(p.type==="relic"?.78:.42)+Math.sin(t*2+p.phase)*.09;} if(p.type==="lantern"){p.mesh.scale.setScalar(1+Math.sin(t*2+p.phase)*.08); if(p.light)p.light.intensity=.8+Math.sin(t*2+p.phase)*.25;} if(p.type==="flower")p.mesh.position.y=.09+Math.sin(t*2+p.phase)*.035; if(p.type==="page"){p.mesh.rotation.y+=dt*.5; p.mesh.position.y+=Math.sin(t+p.phase)*.001;} if(p.type==="planet")p.mesh.rotation.y+=dt*.45; if(p.type==="water")p.mesh.material.opacity=.78+Math.sin(t)*.08; if(p.type==="portal")p.mesh.scale.setScalar(1+Math.sin(t*2)*.06); if(p.type==="heart")p.mesh.scale.setScalar(1+Math.sin(t*3.5)*.12);} ammara.rotation.y+=dt*.4; ammara.position.y=6+Math.sin(t*1.1)*.25; pika.rotation.y+=dt*2; pika.position.y=.6+Math.sin(t*4)*.07;}
 function updatePrompt(){const o=nearestObject(); if(!o||dialogue.length){promptEl.classList.add("hidden");return;} promptEl.textContent=`E / Enter: ${o.userData.label}`; promptEl.classList.remove("hidden");}
-function render(){const dt=Math.min(clock.getDelta(),.05); update(dt); const p=player.group.position; const wide=settings.camera==="wide"; camera.position.lerp(new THREE.Vector3(p.x,wide?18:12.5,p.z+(wide?18:12)),.06); camera.lookAt(p.x,.65,p.z-2.6); renderer.render(scene,camera); requestAnimationFrame(render);}
+function render(){const dt=Math.min(clock.getDelta(),.05); update(dt); const p=player.group.position; const wide=settings.camera==="wide"; camera.position.lerp(new THREE.Vector3(p.x,wide?8.2:5.8,p.z+(wide?14:9.2)),.07); camera.lookAt(p.x,wide?1.1:.95,p.z-(wide?5.5:4.2)); renderer.render(scene,camera); requestAnimationFrame(render);}
 
 addEventListener("resize",()=>{renderer.setSize(innerWidth,innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();});
 addEventListener("keydown",e=>{keys.add(e.code); if(state==="title"&&(e.code==="Enter"||e.code==="Space"))startGame(true); if(state==="play"&&(e.code==="KeyE"||e.code==="Enter"||e.code==="Space"))interact(); if(e.code==="KeyJ")showJournal(); if(e.code==="KeyS"){persist();toast("Saved");} if(e.code==="KeyM"){settings.music=!settings.music; persistSettings(); settings.music?bootMusic():stopMusic(); toast(`Music ${settings.music?"on":"off"}`);} if(e.code==="Escape")showTitle();});
